@@ -6,13 +6,12 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, webSearchEnabled } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -20,7 +19,40 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Sending request to Lovable AI with", messages.length, "messages");
+    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled);
+
+    const systemPrompt = webSearchEnabled 
+      ? "You are Cloud, a helpful and friendly AI assistant with access to current web information. When users ask questions, search the web for the most up-to-date information and cite your sources. Be conversational but informative, and always mention when you're using web search results."
+      : "You are Cloud, a helpful and friendly AI assistant. You provide clear, concise, and accurate responses. Be conversational but informative.";
+
+    const requestBody: any = {
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      stream: true,
+    };
+
+    // Add web search grounding if enabled
+    if (webSearchEnabled) {
+      requestBody.tools = [
+        {
+          type: "function",
+          function: {
+            name: "googleSearch",
+            description: "Search the web for current information",
+            parameters: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "The search query" }
+              },
+              required: ["query"]
+            }
+          }
+        }
+      ];
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -28,17 +60,7 @@ serve(async (req) => {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system", 
-            content: "You are Cloud, a helpful and friendly AI assistant. You provide clear, concise, and accurate responses. Be conversational but informative." 
-          },
-          ...messages,
-        ],
-        stream: true,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
