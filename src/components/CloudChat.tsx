@@ -1,17 +1,23 @@
 import { useState, useRef, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Cloud, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+const WEB_SEARCH_KEY = "cloud-web-search-enabled";
+
 export function CloudChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(() => {
+    const stored = localStorage.getItem(WEB_SEARCH_KEY);
+    return stored === null ? true : stored === "true";
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -22,6 +28,20 @@ export function CloudChat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem(WEB_SEARCH_KEY, String(webSearchEnabled));
+  }, [webSearchEnabled]);
+
+  const toggleWebSearch = () => {
+    setWebSearchEnabled((prev) => !prev);
+    toast({
+      title: webSearchEnabled ? "Web Search Disabled" : "Web Search Enabled",
+      description: webSearchEnabled 
+        ? "Cloud will now use its built-in knowledge only" 
+        : "Cloud can now browse the web for current information",
+    });
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -41,7 +61,8 @@ export function CloudChat() {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ 
-          messages: [...messages, { role: "user", content: userMessage }] 
+          messages: [...messages, { role: "user", content: userMessage }],
+          webSearchEnabled,
         }),
       });
 
@@ -144,9 +165,21 @@ export function CloudChat() {
           <Cloud className="h-5 w-5 text-foreground" />
           <span className="font-medium text-foreground">Cloud</span>
         </div>
-        <div className="flex items-center rounded-full bg-secondary px-4 py-2">
+        <button
+          onClick={toggleWebSearch}
+          className={cn(
+            "flex items-center gap-2 rounded-full px-4 py-2 transition-all",
+            webSearchEnabled 
+              ? "bg-secondary ring-2 ring-primary/50" 
+              : "bg-secondary/50 opacity-60"
+          )}
+          title={webSearchEnabled ? "Web search enabled - click to disable" : "Web search disabled - click to enable"}
+        >
           <GoogleIcon />
-        </div>
+          {webSearchEnabled && (
+            <span className="text-xs font-medium text-muted-foreground">Search</span>
+          )}
+        </button>
       </header>
 
       {/* Main Content */}
@@ -157,6 +190,11 @@ export function CloudChat() {
               Hello I'm Cloud
             </h1>
             <p className="text-lg text-muted-foreground">Your AI Assistant</p>
+            {webSearchEnabled && (
+              <p className="text-sm text-primary/80 animate-fade-in">
+                Web search enabled
+              </p>
+            )}
           </div>
         ) : (
           <div className="w-full max-w-3xl flex-1 overflow-y-auto px-4 py-8">
