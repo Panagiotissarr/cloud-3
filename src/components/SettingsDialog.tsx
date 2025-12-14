@@ -70,8 +70,8 @@ export function SettingsDialog({
                   </div>
                   
                   {/* Caption area */}
-                  <div className="mt-2 rounded bg-amber-100/90 px-3 py-2 text-center">
-                    <p className="text-sm font-medium text-amber-900">
+                  <div className="mt-2 rounded px-3 py-2 text-center bg-accent">
+                    <p className="text-sm font-medium text-primary-foreground">
                       My Dog Luna - Dev (Panagiotis)
                     </p>
                   </div>
