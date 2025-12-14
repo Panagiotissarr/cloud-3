@@ -18,6 +18,18 @@ interface ImagePreview {
   file: File;
   dataUrl: string;
 }
+
+// Parse markdown-style bold text (**text**)
+const formatText = (text: string) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
+
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
 export function CloudChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -261,14 +273,14 @@ export function CloudChat() {
                   <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
                     {typeof message.content === "string" ? (
                       <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {message.content}
+                        {formatText(message.content)}
                       </p>
                     ) : (
                       <div className="space-y-2">
                         {message.content.map((part, partIndex) => (
                           part.type === "text" ? (
                             <p key={partIndex} className="whitespace-pre-wrap text-sm leading-relaxed">
-                              {part.text}
+                              {formatText(part.text || "")}
                             </p>
                           ) : part.type === "image_url" && part.image_url ? (
                             <img 
