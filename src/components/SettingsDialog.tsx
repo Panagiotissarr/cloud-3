@@ -56,7 +56,7 @@ export function SettingsDialog({
           {showDogGallery && <div className="animate-fade-in space-y-3">
               {/* Photo Frame */}
               <div className="relative mx-auto w-full max-w-xs">
-                <div className="rounded-lg p-2 shadow-lg border-[sidebar-accent-foreground] border-sidebar-accent bg-secondary">
+                <div className="rounded-lg p-2 shadow-lg border-[sidebar-accent-foreground] border-sidebar-accent bg-secondary py-[10px] px-[10px]">
                   <div className="relative aspect-square overflow-hidden rounded bg-muted">
                     <img src={lunaImages[currentImageIndex]} alt={`Luna photo ${currentImageIndex + 1}`} className="h-full w-full object-cover" />
                     
