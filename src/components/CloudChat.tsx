@@ -1,10 +1,22 @@
 import { useState, useRef, useEffect } from "react";
-import { Cloud, Send } from "lucide-react";
+import { Cloud, Send, Image, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+interface MessageContent {
+  type: "text" | "image_url";
+  text?: string;
+  image_url?: { url: string };
+}
+
 interface Message {
   role: "user" | "assistant";
-  content: string;
+  content: string | MessageContent[];
+}
+
+interface ImagePreview {
+  file: File;
+  dataUrl: string;
 }
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
 export function CloudChat() {
@@ -15,7 +27,9 @@ export function CloudChat() {
     const stored = localStorage.getItem(WEB_SEARCH_KEY);
     return stored === null ? true : stored === "true";
   });
+  const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     toast
   } = useToast();
@@ -37,17 +51,88 @@ export function CloudChat() {
       description: webSearchEnabled ? "Cloud will now use its built-in knowledge only" : "Cloud can now browse the web for current information"
     });
   };
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image under 10MB",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview({
+        file,
+        dataUrl: reader.result as string
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !imagePreview) || isLoading) return;
+    
     const userMessage = input.trim();
     setInput("");
+    
+    // Build message content
+    let messageContent: string | MessageContent[];
+    let apiMessageContent: string | MessageContent[];
+    
+    if (imagePreview) {
+      const contentParts: MessageContent[] = [];
+      if (userMessage) {
+        contentParts.push({ type: "text", text: userMessage });
+      }
+      contentParts.push({
+        type: "image_url",
+        image_url: { url: imagePreview.dataUrl }
+      });
+      messageContent = contentParts;
+      apiMessageContent = contentParts;
+    } else {
+      messageContent = userMessage;
+      apiMessageContent = userMessage;
+    }
+    
     setMessages(prev => [...prev, {
       role: "user",
-      content: userMessage
+      content: messageContent
     }]);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setIsLoading(true);
+    
     try {
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+      
+      // Build messages for API - convert complex content to API format
+      const apiMessages = [...messages, {
+        role: "user" as const,
+        content: apiMessageContent
+      }];
+      
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -55,10 +140,7 @@ export function CloudChat() {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
         },
         body: JSON.stringify({
-          messages: [...messages, {
-            role: "user",
-            content: userMessage
-          }],
+          messages: apiMessages,
           webSearchEnabled
         })
       });
@@ -177,9 +259,28 @@ export function CloudChat() {
             <div className="space-y-6">
               {messages.map((message, index) => <div key={index} className={`flex animate-fade-in ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {message.content}
-                    </p>
+                    {typeof message.content === "string" ? (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {message.content}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {message.content.map((part, partIndex) => (
+                          part.type === "text" ? (
+                            <p key={partIndex} className="whitespace-pre-wrap text-sm leading-relaxed">
+                              {part.text}
+                            </p>
+                          ) : part.type === "image_url" && part.image_url ? (
+                            <img 
+                              key={partIndex} 
+                              src={part.image_url.url} 
+                              alt="Uploaded" 
+                              className="max-w-full rounded-lg max-h-64 object-contain"
+                            />
+                          ) : null
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>)}
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && <div className="flex justify-start animate-fade-in">
@@ -201,9 +302,42 @@ export function CloudChat() {
 
         {/* Input Area */}
         <div className={`w-full max-w-2xl px-4 ${hasMessages ? "pb-8" : "mt-12"}`}>
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="mb-2 flex items-start gap-2 animate-fade-in">
+              <div className="relative">
+                <img 
+                  src={imagePreview.dataUrl} 
+                  alt="Preview" 
+                  className="h-20 w-20 rounded-lg object-cover"
+                />
+                <button 
+                  onClick={removeImage}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
           <div className="relative flex items-center">
-            <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyPress={handleKeyPress} placeholder="Ask Me Anything" className="w-full rounded-full bg-secondary py-4 pl-6 pr-16 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" disabled={isLoading} />
-            <button onClick={sendMessage} disabled={!input.trim() || isLoading} className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50">
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleImageSelect}
+              accept="image/*"
+              className="hidden"
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="absolute left-3 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              title="Upload image"
+            >
+              <Image className="h-5 w-5" />
+            </button>
+            <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyPress={handleKeyPress} placeholder="Ask Me Anything" className="w-full rounded-full bg-secondary py-4 pl-14 pr-16 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" disabled={isLoading} />
+            <button onClick={sendMessage} disabled={(!input.trim() && !imagePreview) || isLoading} className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50">
               <Send className="h-5 w-5" />
             </button>
           </div>
