@@ -3,19 +3,18 @@ import { Cloud, Send, Image, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./SettingsDialog";
-
 const USER_NAME_KEY = "cloud-user-name";
 interface MessageContent {
   type: "text" | "image_url";
   text?: string;
-  image_url?: { url: string };
+  image_url?: {
+    url: string;
+  };
 }
-
 interface Message {
   role: "user" | "assistant";
   content: string | MessageContent[];
 }
-
 interface ImagePreview {
   file: File;
   dataUrl: string;
@@ -31,7 +30,6 @@ const formatText = (text: string) => {
     return part;
   });
 };
-
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
 export function CloudChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -74,7 +72,6 @@ export function CloudChat() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file",
@@ -83,7 +80,6 @@ export function CloudChat() {
       });
       return;
     }
-    
     if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -92,7 +88,6 @@ export function CloudChat() {
       });
       return;
     }
-    
     const reader = new FileReader();
     reader.onload = () => {
       setImagePreview({
@@ -102,32 +97,33 @@ export function CloudChat() {
     };
     reader.readAsDataURL(file);
   };
-
   const removeImage = () => {
     setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
-
   const sendMessage = async () => {
-    if ((!input.trim() && !imagePreview) || isLoading) return;
-    
+    if (!input.trim() && !imagePreview || isLoading) return;
     const userMessage = input.trim();
     setInput("");
-    
+
     // Build message content
     let messageContent: string | MessageContent[];
     let apiMessageContent: string | MessageContent[];
-    
     if (imagePreview) {
       const contentParts: MessageContent[] = [];
       if (userMessage) {
-        contentParts.push({ type: "text", text: userMessage });
+        contentParts.push({
+          type: "text",
+          text: userMessage
+        });
       }
       contentParts.push({
         type: "image_url",
-        image_url: { url: imagePreview.dataUrl }
+        image_url: {
+          url: imagePreview.dataUrl
+        }
       });
       messageContent = contentParts;
       apiMessageContent = contentParts;
@@ -135,7 +131,6 @@ export function CloudChat() {
       messageContent = userMessage;
       apiMessageContent = userMessage;
     }
-    
     setMessages(prev => [...prev, {
       role: "user",
       content: messageContent
@@ -143,16 +138,14 @@ export function CloudChat() {
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setIsLoading(true);
-    
     try {
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-      
+
       // Build messages for API - convert complex content to API format
       const apiMessages = [...messages, {
         role: "user" as const,
         content: apiMessageContent
       }];
-      
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -264,51 +257,29 @@ export function CloudChat() {
             <GoogleIcon />
             {webSearchEnabled && <span className="text-xs font-medium text-muted-foreground">Search</span>}
           </button>
-          <SettingsDialog
-            userName={userName}
-            onUserNameChange={setUserName}
-            webSearchEnabled={webSearchEnabled}
-            onWebSearchToggle={toggleWebSearch}
-          />
+          <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} />
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex flex-1 flex-col items-center justify-center px-4">
         {!hasMessages ? <div className="flex flex-col items-center gap-4 animate-fade-in">
-            <h1 className="text-5xl font-light tracking-tight text-foreground md:text-6xl">
-              Hello I'm Cloud
-            </h1>
-            <p className="text-lg text-muted-foreground">Your AI Assistant</p>
-            {webSearchEnabled && <p className="text-sm text-primary/80 animate-fade-in">
-                Web search enabled
-              </p>}
+            <h1 className="text-5xl tracking-tight text-foreground text-center font-sans font-thin md:text-7xl">Hello I'm Cloud
+
+        </h1>
+            
+            {webSearchEnabled}
           </div> : <div className="w-full max-w-3xl flex-1 overflow-y-auto px-4 py-8">
             <div className="space-y-6">
               {messages.map((message, index) => <div key={index} className={`flex animate-fade-in ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                    {typeof message.content === "string" ? (
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {typeof message.content === "string" ? <p className="whitespace-pre-wrap text-sm leading-relaxed">
                         {formatText(message.content)}
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {message.content.map((part, partIndex) => (
-                          part.type === "text" ? (
-                            <p key={partIndex} className="whitespace-pre-wrap text-sm leading-relaxed">
+                      </p> : <div className="space-y-2">
+                        {message.content.map((part, partIndex) => part.type === "text" ? <p key={partIndex} className="whitespace-pre-wrap text-sm leading-relaxed">
                               {formatText(part.text || "")}
-                            </p>
-                          ) : part.type === "image_url" && part.image_url ? (
-                            <img 
-                              key={partIndex} 
-                              src={part.image_url.url} 
-                              alt="Uploaded" 
-                              className="max-w-full rounded-lg max-h-64 object-contain"
-                            />
-                          ) : null
-                        ))}
-                      </div>
-                    )}
+                            </p> : part.type === "image_url" && part.image_url ? <img key={partIndex} src={part.image_url.url} alt="Uploaded" className="max-w-full rounded-lg max-h-64 object-contain" /> : null)}
+                      </div>}
                   </div>
                 </div>)}
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && <div className="flex justify-start animate-fade-in">
@@ -331,41 +302,21 @@ export function CloudChat() {
         {/* Input Area */}
         <div className={`w-full max-w-2xl px-4 ${hasMessages ? "pb-8" : "mt-12"}`}>
           {/* Image Preview */}
-          {imagePreview && (
-            <div className="mb-2 flex items-start gap-2 animate-fade-in">
+          {imagePreview && <div className="mb-2 flex items-start gap-2 animate-fade-in">
               <div className="relative">
-                <img 
-                  src={imagePreview.dataUrl} 
-                  alt="Preview" 
-                  className="h-20 w-20 rounded-lg object-cover"
-                />
-                <button 
-                  onClick={removeImage}
-                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
-                >
+                <img src={imagePreview.dataUrl} alt="Preview" className="h-20 w-20 rounded-lg object-cover" />
+                <button onClick={removeImage} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-            </div>
-          )}
+            </div>}
           <div className="relative flex items-center">
-            <input 
-              type="file" 
-              ref={fileInputRef}
-              onChange={handleImageSelect}
-              accept="image/*"
-              className="hidden"
-            />
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              className="absolute left-3 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              title="Upload image"
-            >
+            <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept="image/*" className="hidden" />
+            <button onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="absolute left-3 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50" title="Upload image">
               <Image className="h-5 w-5" />
             </button>
             <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyPress={handleKeyPress} placeholder="Ask Me Anything" className="w-full rounded-full bg-secondary py-4 pl-14 pr-16 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" disabled={isLoading} />
-            <button onClick={sendMessage} disabled={(!input.trim() && !imagePreview) || isLoading} className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50">
+            <button onClick={sendMessage} disabled={!input.trim() && !imagePreview || isLoading} className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50">
               <Send className="h-5 w-5" />
             </button>
           </div>
