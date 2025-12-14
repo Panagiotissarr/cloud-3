@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Cloud, Send, Image, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { SettingsDialog } from "./SettingsDialog";
 
+const USER_NAME_KEY = "cloud-user-name";
 interface MessageContent {
   type: "text" | "image_url";
   text?: string;
@@ -39,6 +41,9 @@ export function CloudChat() {
     const stored = localStorage.getItem(WEB_SEARCH_KEY);
     return stored === null ? true : stored === "true";
   });
+  const [userName, setUserName] = useState(() => {
+    return localStorage.getItem(USER_NAME_KEY) || "User";
+  });
   const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +61,9 @@ export function CloudChat() {
   useEffect(() => {
     localStorage.setItem(WEB_SEARCH_KEY, String(webSearchEnabled));
   }, [webSearchEnabled]);
+  useEffect(() => {
+    localStorage.setItem(USER_NAME_KEY, userName);
+  }, [userName]);
   const toggleWebSearch = () => {
     setWebSearchEnabled(prev => !prev);
     toast({
@@ -251,10 +259,18 @@ export function CloudChat() {
           <Cloud className="h-5 w-5 text-foreground" />
           <span className="font-medium text-foreground">Cloud</span>
         </div>
-        <button onClick={toggleWebSearch} className={cn("flex items-center gap-2 rounded-full px-4 py-2 transition-all", webSearchEnabled ? "bg-secondary ring-2 ring-primary/50" : "bg-secondary/50 opacity-60")} title={webSearchEnabled ? "Web search enabled - click to disable" : "Web search disabled - click to enable"}>
-          <GoogleIcon />
-          {webSearchEnabled && <span className="text-xs font-medium text-muted-foreground">Search</span>}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={toggleWebSearch} className={cn("flex items-center gap-2 rounded-full px-4 py-2 transition-all", webSearchEnabled ? "bg-secondary ring-2 ring-primary/50" : "bg-secondary/50 opacity-60")} title={webSearchEnabled ? "Web search enabled - click to disable" : "Web search disabled - click to enable"}>
+            <GoogleIcon />
+            {webSearchEnabled && <span className="text-xs font-medium text-muted-foreground">Search</span>}
+          </button>
+          <SettingsDialog
+            userName={userName}
+            onUserNameChange={setUserName}
+            webSearchEnabled={webSearchEnabled}
+            onWebSearchToggle={toggleWebSearch}
+          />
+        </div>
       </header>
 
       {/* Main Content */}
