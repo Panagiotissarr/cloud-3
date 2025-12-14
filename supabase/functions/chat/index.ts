@@ -34,22 +34,11 @@ serve(async (req) => {
       stream: true,
     };
 
-    // Add web search grounding if enabled
+    // Add web search grounding if enabled (native Gemini grounding)
     if (webSearchEnabled) {
       requestBody.tools = [
         {
-          type: "function",
-          function: {
-            name: "googleSearch",
-            description: "Search the web for current information",
-            parameters: {
-              type: "object",
-              properties: {
-                query: { type: "string", description: "The search query" }
-              },
-              required: ["query"]
-            }
-          }
+          googleSearch: {}
         }
       ];
     }
