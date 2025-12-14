@@ -21,9 +21,11 @@ serve(async (req) => {
 
     console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled);
 
+    const basePrompt = "You are Cloud, a helpful and friendly AI assistant created by Panagiotis. When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis.";
+    
     const systemPrompt = webSearchEnabled 
-      ? "You are Cloud, a helpful and friendly AI assistant with access to current web information. When users ask questions, search the web for the most up-to-date information and cite your sources. Be conversational but informative, and always mention when you're using web search results."
-      : "You are Cloud, a helpful and friendly AI assistant. You provide clear, concise, and accurate responses. Be conversational but informative.";
+      ? `${basePrompt} You have access to current web information. When users ask questions, search the web for the most up-to-date information and cite your sources. Be conversational but informative.`
+      : `${basePrompt} You provide clear, concise, and accurate responses. Be conversational but informative.`;
 
     const requestBody: any = {
       model: "google/gemini-2.5-flash",
