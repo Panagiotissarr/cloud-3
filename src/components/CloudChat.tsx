@@ -5,11 +5,12 @@ import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./SettingsDialog";
 const USER_NAME_KEY = "cloud-user-name";
 interface MessageContent {
-  type: "text" | "image_url";
+  type: "text" | "image_url" | "search_images";
   text?: string;
   image_url?: {
     url: string;
   };
+  images?: SearchImage[];
 }
 interface Message {
   role: "user" | "assistant";
@@ -18,6 +19,13 @@ interface Message {
 interface ImagePreview {
   file: File;
   dataUrl: string;
+}
+interface SearchImage {
+  id: string;
+  url: string;
+  thumbnail: string;
+  alt: string;
+  photographer: string;
 }
 
 // Parse markdown-style bold text (**text**)
@@ -179,6 +187,8 @@ export function CloudChat() {
       const decoder = new TextDecoder();
       let textBuffer = "";
       let assistantContent = "";
+      let searchImages: SearchImage[] = [];
+      
       while (true) {
         const {
           done,
@@ -199,12 +209,45 @@ export function CloudChat() {
           if (jsonStr === "[DONE]") break;
           try {
             const parsed = JSON.parse(jsonStr);
+            
+            // Check if this is an image search result
+            if (parsed.type === "images" && parsed.images) {
+              searchImages = parsed.images;
+              // Add images to messages immediately
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant") {
+                  return prev;
+                }
+                return [...prev, {
+                  role: "assistant",
+                  content: [{ type: "search_images", images: searchImages }]
+                }];
+              });
+              continue;
+            }
+            
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
               setMessages(prev => {
                 const last = prev[prev.length - 1];
                 if (last?.role === "assistant") {
+                  // Check if we have images already
+                  const existingContent = last.content;
+                  if (Array.isArray(existingContent)) {
+                    const hasImages = existingContent.some(c => c.type === "search_images");
+                    if (hasImages) {
+                      const newContent: MessageContent[] = [
+                        ...existingContent.filter(c => c.type === "search_images"),
+                        { type: "text", text: assistantContent }
+                      ];
+                      return prev.map((m, i) => i === prev.length - 1 ? {
+                        ...m,
+                        content: newContent
+                      } : m);
+                    }
+                  }
                   return prev.map((m, i) => i === prev.length - 1 ? {
                     ...m,
                     content: assistantContent
@@ -270,9 +313,41 @@ export function CloudChat() {
                     {typeof message.content === "string" ? <p className="whitespace-pre-wrap text-sm leading-relaxed">
                         {formatText(message.content)}
                       </p> : <div className="space-y-2">
-                        {message.content.map((part, partIndex) => part.type === "text" ? <p key={partIndex} className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {message.content.map((part, partIndex) => {
+                          if (part.type === "text") {
+                            return <p key={partIndex} className="whitespace-pre-wrap text-sm leading-relaxed">
                               {formatText(part.text || "")}
-                            </p> : part.type === "image_url" && part.image_url ? <img key={partIndex} src={part.image_url.url} alt="Uploaded" className="max-w-full rounded-lg max-h-64 object-contain" /> : null)}
+                            </p>;
+                          }
+                          if (part.type === "image_url" && part.image_url) {
+                            return <img key={partIndex} src={part.image_url.url} alt="Uploaded" className="max-w-full rounded-lg max-h-64 object-contain" />;
+                          }
+                          if (part.type === "search_images" && part.images) {
+                            return <div key={partIndex} className="grid grid-cols-2 gap-2 mt-2">
+                              {part.images.map((img) => (
+                                <a 
+                                  key={img.id} 
+                                  href={img.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="group relative overflow-hidden rounded-lg bg-muted aspect-square"
+                                >
+                                  <img 
+                                    src={img.thumbnail} 
+                                    alt={img.alt} 
+                                    className="h-full w-full object-cover transition-transform group-hover:scale-105" 
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="absolute bottom-2 left-2 right-2 text-xs text-white truncate">
+                                      📷 {img.photographer}
+                                    </span>
+                                  </div>
+                                </a>
+                              ))}
+                            </div>;
+                          }
+                          return null;
+                        })}
                       </div>}
                   </div>
                 </div>)}
