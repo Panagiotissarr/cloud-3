@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./SettingsDialog";
 const USER_NAME_KEY = "cloud-user-name";
+const CHAT_HISTORY_KEY = "cloud-chat-history";
 interface MessageContent {
   type: "text" | "image_url" | "search_images";
   text?: string;
@@ -40,7 +41,14 @@ const formatText = (text: string) => {
 };
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
 export function CloudChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const stored = localStorage.getItem(CHAT_HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(() => {
@@ -70,6 +78,29 @@ export function CloudChat() {
   useEffect(() => {
     localStorage.setItem(USER_NAME_KEY, userName);
   }, [userName]);
+  useEffect(() => {
+    // Save messages to localStorage (skip saving images to keep storage small)
+    const messagesToSave = messages.map(msg => {
+      if (Array.isArray(msg.content)) {
+        // Filter out search_images and image_url to save space
+        const filteredContent = msg.content.filter(c => c.type === "text");
+        if (filteredContent.length === 1 && filteredContent[0].type === "text") {
+          return { ...msg, content: filteredContent[0].text || "" };
+        }
+        return { ...msg, content: filteredContent };
+      }
+      return msg;
+    });
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messagesToSave));
+  }, [messages]);
+  const clearHistory = () => {
+    setMessages([]);
+    localStorage.removeItem(CHAT_HISTORY_KEY);
+    toast({
+      title: "History Cleared",
+      description: "Your chat history has been deleted"
+    });
+  };
   const toggleWebSearch = () => {
     setWebSearchEnabled(prev => !prev);
     toast({
@@ -295,7 +326,7 @@ export function CloudChat() {
           <Cloud className="h-5 w-5 text-foreground" />
           <span className="font-medium text-foreground">Cloud</span>
         </div>
-        <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} />
+        <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} onClearHistory={clearHistory} hasHistory={messages.length > 0} />
       </header>
 
       {/* Main Content */}
