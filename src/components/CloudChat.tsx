@@ -3,8 +3,13 @@ import { Cloud, Send, Image, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./SettingsDialog";
+import { ChatSidebar, ChatSession } from "./ChatSidebar";
+
 const USER_NAME_KEY = "cloud-user-name";
-const CHAT_HISTORY_KEY = "cloud-chat-history";
+const CHAT_SESSIONS_KEY = "cloud-chat-sessions";
+const ACTIVE_SESSION_KEY = "cloud-active-session";
+const SIDEBAR_STATE_KEY = "cloud-sidebar-open";
+
 interface MessageContent {
   type: "text" | "image_url" | "search_images";
   text?: string;
@@ -39,16 +44,68 @@ const formatText = (text: string) => {
     return part;
   });
 };
+
+const generateSessionId = () => `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+const getSessionTitle = (messages: Message[]): string => {
+  const firstUserMessage = messages.find(m => m.role === "user");
+  if (!firstUserMessage) return "New Chat";
+  const content = typeof firstUserMessage.content === "string" 
+    ? firstUserMessage.content 
+    : firstUserMessage.content.find(c => c.type === "text")?.text || "";
+  return content.slice(0, 30) + (content.length > 30 ? "..." : "") || "New Chat";
+};
+
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
+
 export function CloudChat() {
-  const [messages, setMessages] = useState<Message[]>(() => {
+  const [sessions, setSessions] = useState<ChatSession[]>(() => {
     try {
-      const stored = localStorage.getItem(CHAT_HISTORY_KEY);
+      const stored = localStorage.getItem(CHAT_SESSIONS_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
     }
   });
+  
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
+    return localStorage.getItem(ACTIVE_SESSION_KEY);
+  });
+  
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const stored = localStorage.getItem(SIDEBAR_STATE_KEY);
+    return stored === "true";
+  });
+
+  const activeSession = sessions.find(s => s.id === activeSessionId);
+  const messages = activeSession?.messages || [];
+
+  const setMessages = (updater: Message[] | ((prev: Message[]) => Message[])) => {
+    setSessions(prev => {
+      const newMessages = typeof updater === "function" 
+        ? updater(activeSession?.messages || []) 
+        : updater;
+      
+      if (!activeSessionId) {
+        // Create new session
+        const newId = generateSessionId();
+        const newSession: ChatSession = {
+          id: newId,
+          title: getSessionTitle(newMessages),
+          messages: newMessages,
+          createdAt: Date.now(),
+        };
+        setActiveSessionId(newId);
+        return [newSession, ...prev];
+      }
+      
+      return prev.map(s => 
+        s.id === activeSessionId 
+          ? { ...s, messages: newMessages, title: getSessionTitle(newMessages) }
+          : s
+      );
+    });
+  };
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(() => {
@@ -79,26 +136,61 @@ export function CloudChat() {
     localStorage.setItem(USER_NAME_KEY, userName);
   }, [userName]);
   useEffect(() => {
-    // Save messages to localStorage (skip saving images to keep storage small)
-    const messagesToSave = messages.map(msg => {
-      if (Array.isArray(msg.content)) {
-        // Filter out search_images and image_url to save space
-        const filteredContent = msg.content.filter(c => c.type === "text");
-        if (filteredContent.length === 1 && filteredContent[0].type === "text") {
-          return { ...msg, content: filteredContent[0].text || "" };
+    // Save sessions to localStorage
+    const sessionsToSave = sessions.map(session => ({
+      ...session,
+      messages: session.messages.map(msg => {
+        if (Array.isArray(msg.content)) {
+          const filteredContent = msg.content.filter((c: MessageContent) => c.type === "text");
+          if (filteredContent.length === 1 && filteredContent[0].type === "text") {
+            return { ...msg, content: filteredContent[0].text || "" };
+          }
+          return { ...msg, content: filteredContent };
         }
-        return { ...msg, content: filteredContent };
-      }
-      return msg;
+        return msg;
+      })
+    }));
+    localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(sessionsToSave));
+  }, [sessions]);
+  
+  useEffect(() => {
+    if (activeSessionId) {
+      localStorage.setItem(ACTIVE_SESSION_KEY, activeSessionId);
+    }
+  }, [activeSessionId]);
+  
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_STATE_KEY, String(sidebarOpen));
+  }, [sidebarOpen]);
+
+  const handleNewChat = () => {
+    setActiveSessionId(null);
+  };
+
+  const handleSelectSession = (id: string) => {
+    setActiveSessionId(id);
+  };
+
+  const handleDeleteSession = (id: string) => {
+    setSessions(prev => prev.filter(s => s.id !== id));
+    if (activeSessionId === id) {
+      const remaining = sessions.filter(s => s.id !== id);
+      setActiveSessionId(remaining.length > 0 ? remaining[0].id : null);
+    }
+    toast({
+      title: "Chat Deleted",
+      description: "The conversation has been removed"
     });
-    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messagesToSave));
-  }, [messages]);
+  };
+
   const clearHistory = () => {
-    setMessages([]);
-    localStorage.removeItem(CHAT_HISTORY_KEY);
+    setSessions([]);
+    setActiveSessionId(null);
+    localStorage.removeItem(CHAT_SESSIONS_KEY);
+    localStorage.removeItem(ACTIVE_SESSION_KEY);
     toast({
       title: "History Cleared",
-      description: "Your chat history has been deleted"
+      description: "All chat history has been deleted"
     });
   };
   const toggleWebSearch = () => {
@@ -319,15 +411,33 @@ export function CloudChat() {
     }
   };
   const hasMessages = messages.length > 0;
-  return <div className="flex min-h-screen flex-col bg-background">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2">
-          <Cloud className="h-5 w-5 text-foreground" />
-          <span className="font-medium text-foreground">Cloud</span>
-        </div>
-        <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} onClearHistory={clearHistory} hasHistory={messages.length > 0} />
-      </header>
+  return (
+    <>
+      <ChatSidebar
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        onDeleteSession={handleDeleteSession}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(prev => !prev)}
+      />
+      
+      <div className={cn(
+        "flex min-h-screen flex-col bg-background transition-all duration-300",
+        sidebarOpen && "ml-[260px]"
+      )}>
+        {/* Header */}
+        <header className="flex items-center justify-between px-6 py-4">
+          <div className={cn(
+            "flex items-center gap-2 rounded-full bg-secondary px-4 py-2 transition-all",
+            sidebarOpen ? "ml-0" : "ml-12"
+          )}>
+            <Cloud className="h-5 w-5 text-foreground" />
+            <span className="font-medium text-foreground">Cloud</span>
+          </div>
+          <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} onClearHistory={clearHistory} hasHistory={sessions.length > 0} />
+        </header>
 
       {/* Main Content */}
       <main className="flex flex-1 flex-col items-center justify-center px-4">
@@ -428,7 +538,9 @@ export function CloudChat() {
         <span>Cloud Can Make Mistakes</span>
         <span>Made By Panagiotis Powerd By Gemini</span>
       </footer>
-    </div>;
+      </div>
+    </>
+  );
 }
 function GoogleIcon() {
   return <svg className="h-5 w-5" viewBox="0 0 24 24">
