@@ -252,13 +252,7 @@ export function CloudChat() {
           <Cloud className="h-5 w-5 text-foreground" />
           <span className="font-medium text-foreground">Cloud</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={toggleWebSearch} className={cn("flex items-center gap-2 rounded-full px-4 py-2 transition-all", webSearchEnabled ? "bg-secondary ring-2 ring-primary/50" : "bg-secondary/50 opacity-60")} title={webSearchEnabled ? "Web search enabled - click to disable" : "Web search disabled - click to enable"}>
-            <GoogleIcon />
-            {webSearchEnabled && <span className="text-xs font-medium text-muted-foreground">Search</span>}
-          </button>
-          <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} />
-        </div>
+        <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} />
       </header>
 
       {/* Main Content */}
