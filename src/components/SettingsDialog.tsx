@@ -7,25 +7,18 @@ import { Label } from "@/components/ui/label";
 import luna1 from "@/assets/luna-1.jpg";
 import luna2 from "@/assets/luna-2.jpg";
 import luna3 from "@/assets/luna-3.jpg";
-import { Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
 interface SettingsDialogProps {
   userName: string;
   onUserNameChange: (name: string) => void;
   webSearchEnabled: boolean;
   onWebSearchToggle: () => void;
-  onClearHistory: () => void;
-  hasHistory: boolean;
 }
 const lunaImages = [luna1, luna2, luna3];
 export function SettingsDialog({
   userName,
   onUserNameChange,
   webSearchEnabled,
-  onWebSearchToggle,
-  onClearHistory,
-  hasHistory
+  onWebSearchToggle
 }: SettingsDialogProps) {
   const [showDogGallery, setShowDogGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -57,24 +50,6 @@ export function SettingsDialog({
           <div className="flex items-center justify-between">
             <Label htmlFor="websearch">Web Search</Label>
             <Switch id="websearch" checked={webSearchEnabled} onCheckedChange={onWebSearchToggle} />
-          </div>
-
-          {/* Clear History */}
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Chat History</Label>
-              <p className="text-xs text-muted-foreground">Clear all saved conversations</p>
-            </div>
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={onClearHistory}
-              disabled={!hasHistory}
-              className="gap-1"
-            >
-              <Trash2 className="h-4 w-4" />
-              Clear
-            </Button>
           </div>
 
           {/* Dog Gallery */}

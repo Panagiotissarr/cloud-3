@@ -3,20 +3,13 @@ import { Cloud, Send, Image, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./SettingsDialog";
-import { ChatSidebar, ChatSession } from "./ChatSidebar";
-
 const USER_NAME_KEY = "cloud-user-name";
-const CHAT_SESSIONS_KEY = "cloud-chat-sessions";
-const ACTIVE_SESSION_KEY = "cloud-active-session";
-const SIDEBAR_STATE_KEY = "cloud-sidebar-open";
-
 interface MessageContent {
-  type: "text" | "image_url" | "search_images";
+  type: "text" | "image_url";
   text?: string;
   image_url?: {
     url: string;
   };
-  images?: SearchImage[];
 }
 interface Message {
   role: "user" | "assistant";
@@ -25,13 +18,6 @@ interface Message {
 interface ImagePreview {
   file: File;
   dataUrl: string;
-}
-interface SearchImage {
-  id: string;
-  url: string;
-  thumbnail: string;
-  alt: string;
-  photographer: string;
 }
 
 // Parse markdown-style bold text (**text**)
@@ -44,68 +30,9 @@ const formatText = (text: string) => {
     return part;
   });
 };
-
-const generateSessionId = () => `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-const getSessionTitle = (messages: Message[]): string => {
-  const firstUserMessage = messages.find(m => m.role === "user");
-  if (!firstUserMessage) return "New Chat";
-  const content = typeof firstUserMessage.content === "string" 
-    ? firstUserMessage.content 
-    : firstUserMessage.content.find(c => c.type === "text")?.text || "";
-  return content.slice(0, 30) + (content.length > 30 ? "..." : "") || "New Chat";
-};
-
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
-
 export function CloudChat() {
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    try {
-      const stored = localStorage.getItem(CHAT_SESSIONS_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
-  
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
-    return localStorage.getItem(ACTIVE_SESSION_KEY);
-  });
-  
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    const stored = localStorage.getItem(SIDEBAR_STATE_KEY);
-    return stored === "true";
-  });
-
-  const activeSession = sessions.find(s => s.id === activeSessionId);
-  const messages = activeSession?.messages || [];
-
-  const setMessages = (updater: Message[] | ((prev: Message[]) => Message[])) => {
-    setSessions(prev => {
-      const newMessages = typeof updater === "function" 
-        ? updater(activeSession?.messages || []) 
-        : updater;
-      
-      if (!activeSessionId) {
-        // Create new session
-        const newId = generateSessionId();
-        const newSession: ChatSession = {
-          id: newId,
-          title: getSessionTitle(newMessages),
-          messages: newMessages,
-          createdAt: Date.now(),
-        };
-        setActiveSessionId(newId);
-        return [newSession, ...prev];
-      }
-      
-      return prev.map(s => 
-        s.id === activeSessionId 
-          ? { ...s, messages: newMessages, title: getSessionTitle(newMessages) }
-          : s
-      );
-    });
-  };
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(() => {
@@ -135,64 +62,6 @@ export function CloudChat() {
   useEffect(() => {
     localStorage.setItem(USER_NAME_KEY, userName);
   }, [userName]);
-  useEffect(() => {
-    // Save sessions to localStorage
-    const sessionsToSave = sessions.map(session => ({
-      ...session,
-      messages: session.messages.map(msg => {
-        if (Array.isArray(msg.content)) {
-          const filteredContent = msg.content.filter((c: MessageContent) => c.type === "text");
-          if (filteredContent.length === 1 && filteredContent[0].type === "text") {
-            return { ...msg, content: filteredContent[0].text || "" };
-          }
-          return { ...msg, content: filteredContent };
-        }
-        return msg;
-      })
-    }));
-    localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(sessionsToSave));
-  }, [sessions]);
-  
-  useEffect(() => {
-    if (activeSessionId) {
-      localStorage.setItem(ACTIVE_SESSION_KEY, activeSessionId);
-    }
-  }, [activeSessionId]);
-  
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_STATE_KEY, String(sidebarOpen));
-  }, [sidebarOpen]);
-
-  const handleNewChat = () => {
-    setActiveSessionId(null);
-  };
-
-  const handleSelectSession = (id: string) => {
-    setActiveSessionId(id);
-  };
-
-  const handleDeleteSession = (id: string) => {
-    setSessions(prev => prev.filter(s => s.id !== id));
-    if (activeSessionId === id) {
-      const remaining = sessions.filter(s => s.id !== id);
-      setActiveSessionId(remaining.length > 0 ? remaining[0].id : null);
-    }
-    toast({
-      title: "Chat Deleted",
-      description: "The conversation has been removed"
-    });
-  };
-
-  const clearHistory = () => {
-    setSessions([]);
-    setActiveSessionId(null);
-    localStorage.removeItem(CHAT_SESSIONS_KEY);
-    localStorage.removeItem(ACTIVE_SESSION_KEY);
-    toast({
-      title: "History Cleared",
-      description: "All chat history has been deleted"
-    });
-  };
   const toggleWebSearch = () => {
     setWebSearchEnabled(prev => !prev);
     toast({
@@ -310,8 +179,6 @@ export function CloudChat() {
       const decoder = new TextDecoder();
       let textBuffer = "";
       let assistantContent = "";
-      let searchImages: SearchImage[] = [];
-      
       while (true) {
         const {
           done,
@@ -332,45 +199,12 @@ export function CloudChat() {
           if (jsonStr === "[DONE]") break;
           try {
             const parsed = JSON.parse(jsonStr);
-            
-            // Check if this is an image search result
-            if (parsed.type === "images" && parsed.images) {
-              searchImages = parsed.images;
-              // Add images to messages immediately
-              setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
-                  return prev;
-                }
-                return [...prev, {
-                  role: "assistant",
-                  content: [{ type: "search_images", images: searchImages }]
-                }];
-              });
-              continue;
-            }
-            
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
               setMessages(prev => {
                 const last = prev[prev.length - 1];
                 if (last?.role === "assistant") {
-                  // Check if we have images already
-                  const existingContent = last.content;
-                  if (Array.isArray(existingContent)) {
-                    const hasImages = existingContent.some(c => c.type === "search_images");
-                    if (hasImages) {
-                      const newContent: MessageContent[] = [
-                        ...existingContent.filter(c => c.type === "search_images"),
-                        { type: "text", text: assistantContent }
-                      ];
-                      return prev.map((m, i) => i === prev.length - 1 ? {
-                        ...m,
-                        content: newContent
-                      } : m);
-                    }
-                  }
                   return prev.map((m, i) => i === prev.length - 1 ? {
                     ...m,
                     content: assistantContent
@@ -411,33 +245,15 @@ export function CloudChat() {
     }
   };
   const hasMessages = messages.length > 0;
-  return (
-    <>
-      <ChatSidebar
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        onSelectSession={handleSelectSession}
-        onNewChat={handleNewChat}
-        onDeleteSession={handleDeleteSession}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(prev => !prev)}
-      />
-      
-      <div className={cn(
-        "flex min-h-screen flex-col bg-background transition-all duration-300",
-        sidebarOpen && "ml-[260px]"
-      )}>
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4">
-          <div className={cn(
-            "flex items-center gap-2 rounded-full bg-secondary px-4 py-2 transition-all",
-            sidebarOpen ? "ml-0" : "ml-12"
-          )}>
-            <Cloud className="h-5 w-5 text-foreground" />
-            <span className="font-medium text-foreground">Cloud</span>
-          </div>
-          <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} onClearHistory={clearHistory} hasHistory={sessions.length > 0} />
-        </header>
+  return <div className="flex min-h-screen flex-col bg-background">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2">
+          <Cloud className="h-5 w-5 text-foreground" />
+          <span className="font-medium text-foreground">Cloud</span>
+        </div>
+        <SettingsDialog userName={userName} onUserNameChange={setUserName} webSearchEnabled={webSearchEnabled} onWebSearchToggle={toggleWebSearch} />
+      </header>
 
       {/* Main Content */}
       <main className="flex flex-1 flex-col items-center justify-center px-4">
@@ -454,41 +270,9 @@ export function CloudChat() {
                     {typeof message.content === "string" ? <p className="whitespace-pre-wrap text-sm leading-relaxed">
                         {formatText(message.content)}
                       </p> : <div className="space-y-2">
-                        {message.content.map((part, partIndex) => {
-                          if (part.type === "text") {
-                            return <p key={partIndex} className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {message.content.map((part, partIndex) => part.type === "text" ? <p key={partIndex} className="whitespace-pre-wrap text-sm leading-relaxed">
                               {formatText(part.text || "")}
-                            </p>;
-                          }
-                          if (part.type === "image_url" && part.image_url) {
-                            return <img key={partIndex} src={part.image_url.url} alt="Uploaded" className="max-w-full rounded-lg max-h-64 object-contain" />;
-                          }
-                          if (part.type === "search_images" && part.images) {
-                            return <div key={partIndex} className="grid grid-cols-2 gap-2 mt-2">
-                              {part.images.map((img) => (
-                                <a 
-                                  key={img.id} 
-                                  href={img.url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="group relative overflow-hidden rounded-lg bg-muted aspect-square"
-                                >
-                                  <img 
-                                    src={img.thumbnail} 
-                                    alt={img.alt} 
-                                    className="h-full w-full object-cover transition-transform group-hover:scale-105" 
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span className="absolute bottom-2 left-2 right-2 text-xs text-white truncate">
-                                      📷 {img.photographer}
-                                    </span>
-                                  </div>
-                                </a>
-                              ))}
-                            </div>;
-                          }
-                          return null;
-                        })}
+                            </p> : part.type === "image_url" && part.image_url ? <img key={partIndex} src={part.image_url.url} alt="Uploaded" className="max-w-full rounded-lg max-h-64 object-contain" /> : null)}
                       </div>}
                   </div>
                 </div>)}
@@ -538,9 +322,7 @@ export function CloudChat() {
         <span>Cloud Can Make Mistakes</span>
         <span>Made By Panagiotis Powerd By Gemini</span>
       </footer>
-      </div>
-    </>
-  );
+    </div>;
 }
 function GoogleIcon() {
   return <svg className="h-5 w-5" viewBox="0 0 24 24">
