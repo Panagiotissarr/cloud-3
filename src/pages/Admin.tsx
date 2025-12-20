@@ -47,7 +47,7 @@ export default function Admin() {
       } else if (!isAdmin) {
         toast({
           title: "Access Denied",
-          description: "You don't have admin privileges.",
+          description: "You don't have admin.",
           variant: "destructive",
         });
         navigate("/");

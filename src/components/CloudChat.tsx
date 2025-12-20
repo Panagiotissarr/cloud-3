@@ -156,7 +156,7 @@ export function CloudChat() {
   // Get personalized greeting for creator
   const getGreeting = () => {
     if (isCreator && profile) {
-      return `Hello ${profile.display_name || profile.username}! It's wonderful to see you, my creator. How may I assist you today?`;
+      return `Hello ${profile.display_name || profile.username}! How may I assist you Creator?`;
     }
     return "Hello I'm Cloud";
   };
