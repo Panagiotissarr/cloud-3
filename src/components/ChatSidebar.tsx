@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
-import { Menu, Plus, Image, Settings, MessageSquare, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Menu, Plus, Image, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "./SettingsDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Chat {
   id: string;
@@ -20,8 +23,6 @@ interface ChatSidebarProps {
   onSelectChat: (chatId: string) => void;
 }
 
-const SIDEBAR_HOVER_AREA = 20; // pixels from left edge to trigger hover
-
 export function ChatSidebar({
   userName,
   onUserNameChange,
@@ -36,28 +37,23 @@ export function ChatSidebar({
   const [showAllChats, setShowAllChats] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
 
-  // Auto-hide sidebar when mouse leaves
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientX <= SIDEBAR_HOVER_AREA && !isOpen) {
-        setIsOpen(true);
-      }
-    };
+  const { user, isAdmin, signOut, profile } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [isOpen]);
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
+    setIsOpen(false);
+  };
 
   const displayedChats = showAllChats ? chats : chats.slice(0, 10);
 
   return (
     <>
-      {/* Hover trigger area */}
-      <div 
-        className="fixed left-0 top-0 bottom-0 w-5 z-40"
-        onMouseEnter={() => setIsOpen(true)}
-      />
-
       {/* Overlay when sidebar is open */}
       {isOpen && (
         <div 
@@ -72,8 +68,38 @@ export function ChatSidebar({
           "fixed left-0 top-0 bottom-0 w-72 bg-secondary border-r border-border z-50 flex flex-col transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
-        onMouseLeave={() => setIsOpen(false)}
       >
+        {/* Close button */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="absolute right-3 top-3 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        {/* User Info */}
+        <div className="p-4 pt-12 border-b border-border">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-medium">
+                {(profile?.username || user.email || "U").charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground truncate">
+                  {profile?.username || user.email}
+                </p>
+                {isAdmin && (
+                  <p className="text-xs text-primary">Admin</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Sign in to save chats and generate images
+            </p>
+          )}
+        </div>
+
         {/* Top Actions */}
         <div className="p-4 space-y-2">
           <button
@@ -89,12 +115,31 @@ export function ChatSidebar({
 
           <button
             onClick={() => setShowGalleryModal(true)}
-            className="w-full flex items-center gap-3 rounded-lg bg-muted text-muted-foreground px-4 py-3 hover:bg-muted/80 transition-colors"
+            disabled={!user}
+            className={cn(
+              "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
+              user 
+                ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+            )}
           >
             <Image className="h-5 w-5" />
             <span className="font-medium">Image Gallery</span>
             <span className="ml-auto text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Soon</span>
           </button>
+
+          {isAdmin && (
+            <button
+              onClick={() => {
+                navigate("/admin");
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-3 rounded-lg bg-primary/10 text-primary px-4 py-3 hover:bg-primary/20 transition-colors"
+            >
+              <Shield className="h-5 w-5" />
+              <span className="font-medium">Admin Panel</span>
+            </button>
+          )}
         </div>
 
         {/* Chat History */}
@@ -105,7 +150,7 @@ export function ChatSidebar({
           
           {chats.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No chats yet
+              {user ? "No chats yet" : "Sign in to save chats"}
             </p>
           ) : (
             <div className="space-y-1">
@@ -150,8 +195,8 @@ export function ChatSidebar({
           )}
         </div>
 
-        {/* Settings at Bottom */}
-        <div className="p-4 border-t border-border">
+        {/* Bottom Actions */}
+        <div className="p-4 border-t border-border space-y-2">
           <SettingsDialog
             userName={userName}
             onUserNameChange={onUserNameChange}
@@ -159,6 +204,27 @@ export function ChatSidebar({
             onWebSearchToggle={onWebSearchToggle}
             variant="sidebar"
           />
+          
+          {user ? (
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 rounded-lg bg-muted text-muted-foreground px-4 py-3 hover:bg-muted/80 transition-colors"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="font-medium">Sign Out</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                navigate("/auth");
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-3 rounded-lg bg-primary text-primary-foreground px-4 py-3 hover:opacity-90 transition-opacity"
+            >
+              <LogIn className="h-5 w-5" />
+              <span className="font-medium">Sign In</span>
+            </button>
+          )}
         </div>
       </aside>
 
