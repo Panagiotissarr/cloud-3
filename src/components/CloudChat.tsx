@@ -3,30 +3,11 @@ import { Cloud, Send, Image, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ChatSidebar } from "./ChatSidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useChats, Message, MessageContent } from "@/hooks/useChats";
 
 const USER_NAME_KEY = "cloud-user-name";
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
-const CHATS_STORAGE_KEY = "cloud-chat-history";
-
-interface MessageContent {
-  type: "text" | "image_url";
-  text?: string;
-  image_url?: {
-    url: string;
-  };
-}
-
-interface Message {
-  role: "user" | "assistant";
-  content: string | MessageContent[];
-}
-
-interface Chat {
-  id: string;
-  title: string;
-  timestamp: Date;
-  messages: Message[];
-}
 
 interface ImagePreview {
   file: File;
@@ -48,40 +29,24 @@ const formatText = (text: string) => {
 const generateChatTitle = (message: Message): string => {
   const content = typeof message.content === "string" 
     ? message.content 
-    : message.content.find(c => c.type === "text")?.text || "New Chat";
+    : (message.content as MessageContent[]).find(c => c.type === "text")?.text || "New Chat";
   return content.slice(0, 40) + (content.length > 40 ? "..." : "");
 };
 
-// Load chats from localStorage
-const loadChats = (): Chat[] => {
-  try {
-    const stored = localStorage.getItem(CHATS_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return parsed.map((chat: any) => ({
-        ...chat,
-        timestamp: new Date(chat.timestamp)
-      }));
-    }
-  } catch (e) {
-    console.error("Failed to load chats:", e);
-  }
-  return [];
-};
-
-// Save chats to localStorage
-const saveChats = (chats: Chat[]) => {
-  try {
-    localStorage.setItem(CHATS_STORAGE_KEY, JSON.stringify(chats));
-  } catch (e) {
-    console.error("Failed to save chats:", e);
-  }
-};
-
 export function CloudChat() {
-  const [chats, setChats] = useState<Chat[]>(() => loadChats());
-  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { user, profile, isCreator } = useAuth();
+  const {
+    chats,
+    currentChatId,
+    messages,
+    setMessages,
+    createChat,
+    addMessage,
+    updateLastMessage,
+    selectChat,
+    newChat,
+  } = useChats();
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(() => {
@@ -112,21 +77,12 @@ export function CloudChat() {
     localStorage.setItem(USER_NAME_KEY, userName);
   }, [userName]);
 
-  // Save chats whenever they change
+  // Update userName when profile loads
   useEffect(() => {
-    saveChats(chats);
-  }, [chats]);
-
-  // Update current chat messages when messages change
-  useEffect(() => {
-    if (currentChatId && messages.length > 0) {
-      setChats(prev => prev.map(chat => 
-        chat.id === currentChatId 
-          ? { ...chat, messages, timestamp: new Date() }
-          : chat
-      ));
+    if (profile?.display_name) {
+      setUserName(profile.display_name);
     }
-  }, [messages, currentChatId]);
+  }, [profile]);
 
   const toggleWebSearch = () => {
     setWebSearchEnabled((prev) => !prev);
@@ -139,23 +95,28 @@ export function CloudChat() {
   };
 
   const handleNewChat = () => {
-    setCurrentChatId(null);
-    setMessages([]);
+    newChat();
     setInput("");
     setImagePreview(null);
   };
 
   const handleSelectChat = (chatId: string) => {
-    const chat = chats.find(c => c.id === chatId);
-    if (chat) {
-      setCurrentChatId(chatId);
-      setMessages(chat.messages);
-    }
+    selectChat(chatId);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Check if user is logged in for image generation
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to use image features.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!file.type.startsWith("image/")) {
       toast({
@@ -192,6 +153,22 @@ export function CloudChat() {
     }
   };
 
+  // Get personalized greeting for creator
+  const getGreeting = () => {
+    if (isCreator && profile) {
+      return `Hello ${profile.display_name || profile.username}! It's wonderful to see you, my creator. How may I assist you today?`;
+    }
+    return "Hello I'm Cloud";
+  };
+
+  // Get personalized system message for creator
+  const getSystemContext = () => {
+    if (isCreator && profile) {
+      return `You are speaking with your creator, ${profile.display_name || profile.username}. Be extra warm, friendly, and appreciative. Address them as your creator and show gratitude for creating you.`;
+    }
+    return "";
+  };
+
   const sendMessage = async () => {
     if ((!input.trim() && !imagePreview) || isLoading) return;
 
@@ -222,18 +199,12 @@ export function CloudChat() {
 
     // Create new chat if this is the first message
     if (!currentChatId) {
-      const newChatId = crypto.randomUUID();
-      const newChat: Chat = {
-        id: newChatId,
-        title: generateChatTitle(newUserMessage),
-        timestamp: new Date(),
-        messages: [newUserMessage],
-      };
-      setChats(prev => [newChat, ...prev]);
-      setCurrentChatId(newChatId);
+      const title = generateChatTitle(newUserMessage);
+      await createChat(title, newUserMessage);
+    } else {
+      await addMessage(currentChatId, newUserMessage);
     }
 
-    setMessages((prev) => [...prev, newUserMessage]);
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setIsLoading(true);
@@ -243,13 +214,20 @@ export function CloudChat() {
 
       const apiMessages = [...messages, { role: "user" as const, content: apiMessageContent }];
 
+      // Add creator context if applicable
+      const systemContext = getSystemContext();
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: apiMessages, webSearchEnabled }),
+        body: JSON.stringify({ 
+          messages: apiMessages, 
+          webSearchEnabled,
+          systemContext 
+        }),
       });
 
       if (!resp.ok) {
@@ -300,15 +278,7 @@ export function CloudChat() {
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
-              setMessages((prev) => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
-                  return prev.map((m, i) =>
-                    i === prev.length - 1 ? { ...m, content: assistantContent } : m
-                  );
-                }
-                return [...prev, { role: "assistant", content: assistantContent }];
-              });
+              updateLastMessage(assistantContent);
             }
           } catch {
             textBuffer = line + "\n" + textBuffer;
@@ -317,14 +287,14 @@ export function CloudChat() {
         }
       }
 
+      // Save assistant message to database
+      if (currentChatId && assistantContent) {
+        await addMessage(currentChatId, { role: "assistant", content: assistantContent });
+      }
+
       if (!assistantContent) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "I apologize, but I couldn't generate a response. Please try again.",
-          },
-        ]);
+        const errorMessage = { role: "assistant" as const, content: "I apologize, but I couldn't generate a response. Please try again." };
+        setMessages((prev) => [...prev, errorMessage]);
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -361,7 +331,7 @@ export function CloudChat() {
       />
 
       {/* Header */}
-      <header className="flex items-center justify-center px-6 py-4">
+      <header className="flex items-center justify-end px-6 py-4">
         <div className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2">
           <Cloud className="h-5 w-5 text-foreground" />
           <span className="font-medium text-foreground">Cloud</span>
@@ -373,9 +343,13 @@ export function CloudChat() {
         {!hasMessages ? (
           <div className="flex flex-col items-center gap-4 animate-fade-in">
             <h1 className="text-5xl tracking-tight text-foreground text-center font-sans font-thin md:text-7xl">
-              Hello I'm Cloud
+              {getGreeting()}
             </h1>
-            {webSearchEnabled}
+            {!user && (
+              <p className="text-muted-foreground text-center max-w-md">
+                Sign in to save your chats and generate images
+              </p>
+            )}
           </div>
         ) : (
           <div className="w-full max-w-3xl flex-1 overflow-y-auto px-4 py-8">
@@ -400,7 +374,7 @@ export function CloudChat() {
                       </p>
                     ) : (
                       <div className="space-y-2">
-                        {message.content.map((part, partIndex) =>
+                        {(message.content as MessageContent[]).map((part, partIndex) =>
                           part.type === "text" ? (
                             <p
                               key={partIndex}
@@ -474,9 +448,14 @@ export function CloudChat() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              className="absolute left-3 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              title="Upload image"
+              disabled={isLoading || !user}
+              className={cn(
+                "absolute left-3 flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+                user 
+                  ? "text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  : "text-muted-foreground/50 cursor-not-allowed"
+              )}
+              title={user ? "Upload image" : "Sign in to upload images"}
             >
               <Image className="h-5 w-5" />
             </button>
