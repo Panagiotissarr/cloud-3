@@ -70,11 +70,22 @@ export function useChats() {
             id: chat.id,
             title: chat.title,
             timestamp: new Date(chat.updated_at),
-            messages: (msgs || []).map((m) => ({
-              id: m.id,
-              role: m.role as "user" | "assistant",
-              content: m.content,
-            })),
+            messages: (msgs || []).map((m) => {
+              // Parse JSON content if it's a stringified array
+              let parsedContent = m.content;
+              if (typeof m.content === "string" && m.content.startsWith("[")) {
+                try {
+                  parsedContent = JSON.parse(m.content);
+                } catch {
+                  parsedContent = m.content;
+                }
+              }
+              return {
+                id: m.id,
+                role: m.role as "user" | "assistant",
+                content: parsedContent,
+              };
+            }),
           };
         })
       );
