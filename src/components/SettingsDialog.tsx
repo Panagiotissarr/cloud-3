@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { Settings, ChevronLeft, ChevronRight, Mic } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import luna1 from "@/assets/luna-1.jpg";
 import luna2 from "@/assets/luna-2.jpg";
 import luna3 from "@/assets/luna-3.jpg";
+import { AVAILABLE_VOICES } from "@/hooks/useVoiceChat";
 
 interface SettingsDialogProps {
   userName: string;
@@ -14,6 +16,8 @@ interface SettingsDialogProps {
   webSearchEnabled: boolean;
   onWebSearchToggle: () => void;
   variant?: "header" | "sidebar";
+  selectedVoice?: string;
+  onVoiceChange?: (voiceId: string) => void;
 }
 
 const lunaImages = [luna1, luna2, luna3];
@@ -24,6 +28,8 @@ export function SettingsDialog({
   webSearchEnabled,
   onWebSearchToggle,
   variant = "header",
+  selectedVoice,
+  onVoiceChange,
 }: SettingsDialogProps) {
   const [showDogGallery, setShowDogGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -82,6 +88,28 @@ export function SettingsDialog({
               onCheckedChange={onWebSearchToggle}
             />
           </div>
+
+          {/* Voice Selection */}
+          {selectedVoice && onVoiceChange && (
+            <div className="space-y-2">
+              <Label htmlFor="voice" className="flex items-center gap-2">
+                <Mic className="h-4 w-4" />
+                Voice
+              </Label>
+              <Select value={selectedVoice} onValueChange={onVoiceChange}>
+                <SelectTrigger id="voice">
+                  <SelectValue placeholder="Select a voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AVAILABLE_VOICES.map((voice) => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      {voice.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Dog Gallery */}
           {showDogGallery && (
