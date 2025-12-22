@@ -21,6 +21,8 @@ interface ChatSidebarProps {
   currentChatId: string | null;
   chats: Chat[];
   onSelectChat: (chatId: string) => void;
+  selectedVoice?: string;
+  onVoiceChange?: (voiceId: string) => void;
 }
 
 export function ChatSidebar({
@@ -32,6 +34,8 @@ export function ChatSidebar({
   currentChatId,
   chats,
   onSelectChat,
+  selectedVoice,
+  onVoiceChange,
 }: ChatSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showAllChats, setShowAllChats] = useState(false);
@@ -203,6 +207,8 @@ export function ChatSidebar({
             webSearchEnabled={webSearchEnabled}
             onWebSearchToggle={onWebSearchToggle}
             variant="sidebar"
+            selectedVoice={selectedVoice}
+            onVoiceChange={onVoiceChange}
           />
           
           {user ? (

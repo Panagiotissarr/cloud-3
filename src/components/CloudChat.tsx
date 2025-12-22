@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Cloud, Send, Image, X } from "lucide-react";
+import { Cloud, Send, Image, X, Mic, PhoneOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ChatSidebar } from "./ChatSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChats, Message, MessageContent } from "@/hooks/useChats";
+import { useVoiceChat } from "@/hooks/useVoiceChat";
 
 const USER_NAME_KEY = "cloud-user-name";
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
@@ -46,6 +47,16 @@ export function CloudChat() {
     selectChat,
     newChat,
   } = useChats();
+  
+  const {
+    isConnecting: isVoiceConnecting,
+    isConnected: isVoiceConnected,
+    isSpeaking,
+    startConversation,
+    stopConversation,
+    selectedVoice,
+    setSelectedVoice,
+  } = useVoiceChat();
 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -328,6 +339,8 @@ export function CloudChat() {
         currentChatId={currentChatId}
         chats={chats}
         onSelectChat={handleSelectChat}
+        selectedVoice={selectedVoice}
+        onVoiceChange={setSelectedVoice}
       />
 
       {/* Header */}
@@ -438,6 +451,13 @@ export function CloudChat() {
               </div>
             </div>
           )}
+          {/* Voice Status Indicator */}
+          {isVoiceConnected && (
+            <div className="mb-2 flex items-center justify-center gap-2 text-sm text-muted-foreground animate-fade-in">
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span>{isSpeaking ? "Cloud is speaking..." : "Listening..."}</span>
+            </div>
+          )}
           <div className="relative flex items-center">
             <input
               type="file"
@@ -466,15 +486,38 @@ export function CloudChat() {
               onKeyPress={handleKeyPress}
               placeholder="Ask Me Anything"
               className="w-full rounded-full bg-secondary py-4 pl-14 pr-16 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              disabled={isLoading}
+              disabled={isLoading || isVoiceConnected}
             />
-            <button
-              onClick={sendMessage}
-              disabled={(!input.trim() && !imagePreview) || isLoading}
-              className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50"
-            >
-              <Send className="h-5 w-5" />
-            </button>
+            {/* Dynamic button: Voice when empty & logged in, Send when has text, End call when connected */}
+            {isVoiceConnected ? (
+              <button
+                onClick={stopConversation}
+                className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full bg-destructive text-destructive-foreground transition-all hover:opacity-90"
+                title="End voice chat"
+              >
+                <PhoneOff className="h-5 w-5" />
+              </button>
+            ) : !input.trim() && !imagePreview && user ? (
+              <button
+                onClick={startConversation}
+                disabled={isVoiceConnecting || isLoading}
+                className={cn(
+                  "absolute right-1 flex h-12 w-12 items-center justify-center rounded-full transition-all hover:opacity-90 disabled:opacity-50",
+                  isVoiceConnecting ? "bg-primary/80" : "bg-primary text-primary-foreground"
+                )}
+                title="Start voice chat"
+              >
+                <Mic className={cn("h-5 w-5", isVoiceConnecting && "animate-pulse")} />
+              </button>
+            ) : (
+              <button
+                onClick={sendMessage}
+                disabled={(!input.trim() && !imagePreview) || isLoading}
+                className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </div>
       </main>
