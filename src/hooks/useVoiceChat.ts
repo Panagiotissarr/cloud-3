@@ -6,7 +6,7 @@ import { toast } from "sonner";
 const VOICE_KEY = "sk_a785b78dcf6cb0f446d6c7f7d020cdcee949911d23d713db";
 
 export const AVAILABLE_VOICES = [
-  { id: "JBFqnCBsd6RMkjVDRZzb", name: "George" },
+  { id: "xctasy8XvGp2cVO9HL9k", name: "English" },
   { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah" },
   { id: "CwhRBWXzGAHq8TQ4Fs17", name: "Roger" },
   { id: "FGY2WhTYpPnrIDTdsKH5", name: "Laura" },
