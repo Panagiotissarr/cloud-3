@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const VOICE_KEY = "cloud-voice-selection";
+const VOICE_KEY = "sk_a785b78dcf6cb0f446d6c7f7d020cdcee949911d23d713db";
 
 export const AVAILABLE_VOICES = [
   { id: "JBFqnCBsd6RMkjVDRZzb", name: "George" },
