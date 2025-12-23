@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Settings, ChevronLeft, ChevronRight, Mic } from "lucide-react";
+import { Settings, ChevronLeft, ChevronRight, Mic, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [showDogGallery, setShowDogGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { theme, toggleTheme } = useTheme();
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % lunaImages.length);
@@ -77,6 +79,24 @@ export function SettingsDialog({
               onChange={(e) => onUserNameChange(e.target.value)}
               placeholder="User"
             />
+          </div>
+
+          {/* Theme Toggle */}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="theme" className="flex items-center gap-2">
+              {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              Theme
+            </Label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {theme === "dark" ? "Mocha" : "Latte"}
+              </span>
+              <Switch
+                id="theme"
+                checked={theme === "dark"}
+                onCheckedChange={toggleTheme}
+              />
+            </div>
           </div>
 
           {/* Web Search Toggle */}

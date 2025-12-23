@@ -2,50 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Catppuccin Theme System
+ * Light: Latte | Dark: Mocha
+ * All colors are in HSL format
+ */
 
 @layer base {
+  /* Catppuccin Latte (Light Mode) */
   :root {
-    --background: 225 25% 14%;
-    --foreground: 210 40% 98%;
+    --background: 220 23% 95%; /* Base */
+    --foreground: 234 16% 35%; /* Text */
 
-    --card: 225 30% 18%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 22% 92%; /* Mantle */
+    --card-foreground: 234 16% 35%; /* Text */
 
-    --popover: 225 30% 18%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 22% 92%; /* Mantle */
+    --popover-foreground: 234 16% 35%; /* Text */
 
-    --primary: 258 60% 65%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 266 85% 58%; /* Mauve */
+    --primary-foreground: 220 23% 95%; /* Base */
 
-    --secondary: 225 25% 22%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 21% 89%; /* Crust */
+    --secondary-foreground: 234 16% 35%; /* Text */
 
-    --muted: 225 20% 25%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 223 16% 83%; /* Surface0 */
+    --muted-foreground: 233 10% 47%; /* Subtext0 */
 
-    --accent: 258 60% 65%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 266 85% 58%; /* Mauve */
+    --accent-foreground: 220 23% 95%; /* Base */
 
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 347 87% 44%; /* Red */
+    --destructive-foreground: 220 23% 95%; /* Base */
 
-    --border: 225 20% 25%;
-    --input: 225 25% 22%;
-    --ring: 258 60% 65%;
+    --border: 223 16% 83%; /* Surface0 */
+    --input: 220 21% 89%; /* Crust */
+    --ring: 266 85% 58%; /* Mauve */
 
     --radius: 1.5rem;
 
-    --sidebar-background: 225 25% 12%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 258 60% 65%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 225 25% 18%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 225 20% 25%;
-    --sidebar-ring: 258 60% 65%;
+    --sidebar-background: 220 22% 92%; /* Mantle */
+    --sidebar-foreground: 234 16% 35%; /* Text */
+    --sidebar-primary: 266 85% 58%; /* Mauve */
+    --sidebar-primary-foreground: 220 23% 95%; /* Base */
+    --sidebar-accent: 223 16% 83%; /* Surface0 */
+    --sidebar-accent-foreground: 234 16% 35%; /* Text */
+    --sidebar-border: 223 16% 83%; /* Surface0 */
+    --sidebar-ring: 266 85% 58%; /* Mauve */
+  }
+
+  /* Catppuccin Mocha (Dark Mode) */
+  .dark {
+    --background: 240 21% 15%; /* Base */
+    --foreground: 226 64% 88%; /* Text */
+
+    --card: 240 21% 12%; /* Mantle */
+    --card-foreground: 226 64% 88%; /* Text */
+
+    --popover: 240 21% 12%; /* Mantle */
+    --popover-foreground: 226 64% 88%; /* Text */
+
+    --primary: 267 84% 81%; /* Mauve */
+    --primary-foreground: 240 21% 15%; /* Base */
+
+    --secondary: 240 21% 20%; /* Surface0 */
+    --secondary-foreground: 226 64% 88%; /* Text */
+
+    --muted: 237 16% 23%; /* Surface1 */
+    --muted-foreground: 228 24% 72%; /* Subtext0 */
+
+    --accent: 267 84% 81%; /* Mauve */
+    --accent-foreground: 240 21% 15%; /* Base */
+
+    --destructive: 343 81% 75%; /* Red */
+    --destructive-foreground: 240 21% 15%; /* Base */
+
+    --border: 237 16% 23%; /* Surface1 */
+    --input: 240 21% 20%; /* Surface0 */
+    --ring: 267 84% 81%; /* Mauve */
+
+    --sidebar-background: 240 21% 12%; /* Mantle */
+    --sidebar-foreground: 226 64% 88%; /* Text */
+    --sidebar-primary: 267 84% 81%; /* Mauve */
+    --sidebar-primary-foreground: 240 21% 15%; /* Base */
+    --sidebar-accent: 237 16% 23%; /* Surface1 */
+    --sidebar-accent-foreground: 226 64% 88%; /* Text */
+    --sidebar-border: 237 16% 23%; /* Surface1 */
+    --sidebar-ring: 267 84% 81%; /* Mauve */
   }
 }
 
@@ -63,15 +105,5 @@ All colors MUST be HSL.
 @layer utilities {
   .text-balance {
     text-wrap: balance;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
   }
 }
