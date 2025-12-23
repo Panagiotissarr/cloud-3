@@ -190,7 +190,7 @@ export function SettingsDialog({
             <button
               onClick={() => setShowDogGallery((prev) => !prev)}
               className="rounded-full bg-muted px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted/80 transition-colors"
-              title="Meet Luna!"
+              title="Luna"
             >
               🐕
             </button>
