@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -48,7 +49,7 @@
     --sidebar-accent: 223 16% 83%; /* Surface0 */
     --sidebar-accent-foreground: 234 16% 35%; /* Text */
     --sidebar-border: 223 16% 83%; /* Surface0 */
-    --sidebar-ring: 266 85% 58%; /* Mauve */
+    --sidebar-ring: 266 85% 58%; /* Mauve */ --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   }
 
   /* Catppuccin Mocha (Dark Mode) */
@@ -88,7 +89,7 @@
     --sidebar-accent: 237 16% 23%; /* Surface1 */
     --sidebar-accent-foreground: 226 64% 88%; /* Text */
     --sidebar-border: 237 16% 23%; /* Surface1 */
-    --sidebar-ring: 267 84% 81%; /* Mauve */
+    --sidebar-ring: 267 84% 81%; /* Mauve */ --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   }
 }
 
