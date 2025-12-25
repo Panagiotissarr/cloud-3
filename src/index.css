@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -31,7 +32,7 @@
     --accent: 266 85% 58%; /* Mauve */
     --accent-foreground: 220 23% 95%; /* Base */
 
-    --destructive: 347 87% 44%; /* Red */
+    --destructive: 343 81% 75%; /* Red */
     --destructive-foreground: 220 23% 95%; /* Base */
 
     --border: 223 16% 83%; /* Surface0 */
