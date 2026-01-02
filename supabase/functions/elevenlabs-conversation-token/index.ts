@@ -38,7 +38,20 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", response.status, errorText);
-      throw new Error(`ElevenLabs API error: ${response.status}`);
+
+      // Try to surface a useful error back to the client (Supabase invoke otherwise shows generic non-2xx)
+      let message = `ElevenLabs API error: ${response.status}`;
+      try {
+        const parsed = JSON.parse(errorText);
+        message = parsed?.detail?.message || parsed?.message || message;
+      } catch {
+        if (errorText?.trim()) message = errorText;
+      }
+
+      return new Response(JSON.stringify({ error: message }), {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { token } = await response.json();
