@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const VOICE_KEY = "sk_a785b78dcf6cb0f446d6c7f7d020cdcee949911d23d713db";
+const VOICE_PREFERENCE_KEY = "selected_voice_preference";
 
 export const AVAILABLE_VOICES = [
   { id: "xctasy8XvGp2cVO9HL9k", name: "English" },
@@ -19,11 +19,11 @@ export const AVAILABLE_VOICES = [
 export function useVoiceChat() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState(() => {
-    return localStorage.getItem(VOICE_KEY) || AVAILABLE_VOICES[0].id;
+    return localStorage.getItem(VOICE_PREFERENCE_KEY) || AVAILABLE_VOICES[0].id;
   });
 
   useEffect(() => {
-    localStorage.setItem(VOICE_KEY, selectedVoice);
+    localStorage.setItem(VOICE_PREFERENCE_KEY, selectedVoice);
   }, [selectedVoice]);
 
   const conversation = useConversation({
