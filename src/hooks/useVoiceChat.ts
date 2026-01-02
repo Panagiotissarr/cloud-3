@@ -54,8 +54,23 @@ export function useVoiceChat() {
       );
 
       if (error) {
-        console.error("Error getting token:", error);
-        throw new Error(error.message || "Failed to get conversation token");
+        // supabase.functions.invoke returns a generic message for non-2xx responses.
+        // Try to extract the JSON body our backend function returns.
+        const contextBody = (error as any)?.context?.body;
+        const contextError =
+          typeof contextBody === "string"
+            ? (() => {
+                try {
+                  return JSON.parse(contextBody)?.error;
+                } catch {
+                  return undefined;
+                }
+              })()
+            : contextBody?.error;
+
+        const message = contextError || error.message || "Failed to get conversation token";
+        console.error("Error getting token:", message, error);
+        throw new Error(message);
       }
 
       if (!data?.token) {
