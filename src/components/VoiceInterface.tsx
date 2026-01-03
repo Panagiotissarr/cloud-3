@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Mic, Camera, CameraOff, PhoneOff, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
+import { CircularWaveform, AudioWaveform } from "./AudioWaveform";
 
 interface VoiceInterfaceProps {
   isOpen: boolean;
@@ -127,42 +128,42 @@ export function VoiceInterface({ isOpen, onClose }: VoiceInterfaceProps) {
         {/* Camera View or Voice Visualization */}
         <div className="relative w-full max-w-lg aspect-video rounded-2xl overflow-hidden bg-secondary">
           {isCameraOn ? (
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
+            <>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              {/* Overlay waveform on camera view */}
+              {isConnected && (
+                <div className="absolute bottom-4 left-4 right-4">
+                  <AudioWaveform
+                    enabled={isConnected && !isSpeaking}
+                    isSpeaking={isSpeaking}
+                    barCount={48}
+                    className="h-12 bg-background/60 backdrop-blur-sm rounded-xl px-4 py-2"
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-              {/* Voice visualization */}
-              <div className="relative">
-                <div
-                  className={cn(
-                    "h-32 w-32 rounded-full bg-primary/20 flex items-center justify-center transition-all duration-300",
-                    isSpeaking && "animate-pulse scale-110"
+              {/* Circular Voice Waveform Visualization */}
+              <div className="w-48 h-48">
+                <CircularWaveform
+                  enabled={isConnected}
+                  isSpeaking={isSpeaking}
+                  className="w-full h-full"
+                />
+                {/* Center icon */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  {isSpeaking ? (
+                    <Volume2 className="h-8 w-8 text-primary-foreground" />
+                  ) : (
+                    <Mic className="h-8 w-8 text-primary-foreground" />
                   )}
-                >
-                  <div
-                    className={cn(
-                      "h-24 w-24 rounded-full bg-primary/40 flex items-center justify-center transition-all duration-300",
-                      isSpeaking && "scale-110"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "h-16 w-16 rounded-full bg-primary flex items-center justify-center",
-                        !isSpeaking && isConnected && "animate-pulse"
-                      )}
-                    >
-                      {isSpeaking ? (
-                        <Volume2 className="h-8 w-8 text-primary-foreground" />
-                      ) : (
-                        <Mic className="h-8 w-8 text-primary-foreground" />
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
               
