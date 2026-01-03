@@ -3,6 +3,7 @@ import { Cloud, Send, Image, X, Mic, PhoneOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ChatSidebar } from "./ChatSidebar";
+import { VoiceInterface } from "./VoiceInterface";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChats, Message, MessageContent } from "@/hooks/useChats";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
@@ -49,14 +50,12 @@ export function CloudChat() {
   } = useChats();
   
   const {
-    isConnecting: isVoiceConnecting,
     isConnected: isVoiceConnected,
     isSpeaking,
-    startConversation,
     stopConversation,
-    selectedVoice,
-    setSelectedVoice,
   } = useVoiceChat();
+
+  const [isVoiceInterfaceOpen, setIsVoiceInterfaceOpen] = useState(false);
 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -339,8 +338,12 @@ export function CloudChat() {
         currentChatId={currentChatId}
         chats={chats}
         onSelectChat={handleSelectChat}
-        selectedVoice={selectedVoice}
-        onVoiceChange={setSelectedVoice}
+      />
+
+      {/* Voice Interface */}
+      <VoiceInterface
+        isOpen={isVoiceInterfaceOpen}
+        onClose={() => setIsVoiceInterfaceOpen(false)}
       />
 
       {/* Header */}
@@ -499,15 +502,12 @@ export function CloudChat() {
               </button>
             ) : !input.trim() && !imagePreview && user ? (
               <button
-                onClick={startConversation}
-                disabled={isVoiceConnecting || isLoading}
-                className={cn(
-                  "absolute right-1 flex h-12 w-12 items-center justify-center rounded-full transition-all hover:opacity-90 disabled:opacity-50",
-                  isVoiceConnecting ? "bg-primary/80" : "bg-primary text-primary-foreground"
-                )}
+                onClick={() => setIsVoiceInterfaceOpen(true)}
+                disabled={isLoading}
+                className="absolute right-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50"
                 title="Start voice chat"
               >
-                <Mic className={cn("h-5 w-5", isVoiceConnecting && "animate-pulse")} />
+                <Mic className="h-5 w-5" />
               </button>
             ) : (
               <button
