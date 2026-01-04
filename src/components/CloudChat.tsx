@@ -7,8 +7,10 @@ import { VoiceInterface } from "./VoiceInterface";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChats, Message, MessageContent } from "@/hooks/useChats";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
+import { GenderPronouns } from "./SettingsDialog";
 
 const USER_NAME_KEY = "cloud-user-name";
+const USER_GENDER_KEY = "cloud-user-gender";
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
 
 interface ImagePreview {
@@ -66,6 +68,9 @@ export function CloudChat() {
   const [userName, setUserName] = useState(() => {
     return localStorage.getItem(USER_NAME_KEY) || "User";
   });
+  const [userGender, setUserGender] = useState<GenderPronouns>(() => {
+    return (localStorage.getItem(USER_GENDER_KEY) as GenderPronouns) || "prefer-not-to-say";
+  });
   const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,6 +91,10 @@ export function CloudChat() {
   useEffect(() => {
     localStorage.setItem(USER_NAME_KEY, userName);
   }, [userName]);
+
+  useEffect(() => {
+    localStorage.setItem(USER_GENDER_KEY, userGender);
+  }, [userGender]);
 
   // Update userName when profile loads
   useEffect(() => {
@@ -168,7 +177,25 @@ export function CloudChat() {
     if (isCreator && profile) {
       return `Hello ${profile.display_name || profile.username}! How may I assist you Creator?`;
     }
+    if (userName !== "User") {
+      return `Hello ${userName}, I'm Cloud`;
+    }
     return "Hello I'm Cloud";
+  };
+
+  // Get user preferences context for Cloud
+  const getUserPreferences = () => {
+    const preferences: { userName?: string; pronouns?: string } = {};
+    
+    if (userName !== "User") {
+      preferences.userName = userName;
+    }
+    
+    if (userGender !== "prefer-not-to-say") {
+      preferences.pronouns = userGender;
+    }
+    
+    return preferences;
   };
 
   // Get personalized system message for creator
@@ -226,6 +253,7 @@ export function CloudChat() {
 
       // Add creator context if applicable
       const systemContext = getSystemContext();
+      const userPreferences = getUserPreferences();
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -236,7 +264,8 @@ export function CloudChat() {
         body: JSON.stringify({ 
           messages: apiMessages, 
           webSearchEnabled,
-          systemContext 
+          systemContext,
+          userPreferences
         }),
       });
 
@@ -332,6 +361,8 @@ export function CloudChat() {
       <ChatSidebar
         userName={userName}
         onUserNameChange={setUserName}
+        userGender={userGender}
+        onUserGenderChange={setUserGender}
         webSearchEnabled={webSearchEnabled}
         onWebSearchToggle={toggleWebSearch}
         onNewChat={handleNewChat}

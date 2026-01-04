@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, webSearchEnabled } = await req.json();
+    const { messages, webSearchEnabled, systemContext, userPreferences } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -19,9 +19,18 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled);
+    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "user prefs:", userPreferences);
 
-    const basePrompt = "You are Cloud, a helpful and friendly AI assistant created by Panagiotis. When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis.";
+    // Build user context from preferences
+    let userContext = "";
+    if (userPreferences?.userName) {
+      userContext += ` The user's name is ${userPreferences.userName}. Address them by their name when appropriate.`;
+    }
+    if (userPreferences?.pronouns) {
+      userContext += ` The user's preferred pronouns are ${userPreferences.pronouns}. Use these pronouns when referring to them.`;
+    }
+
+    const basePrompt = "You are Cloud, a helpful and friendly AI assistant created by Panagiotis. When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis." + userContext;
     
     const systemPrompt = webSearchEnabled 
       ? `${basePrompt} You have access to current web information. When users ask questions, search the web for the most up-to-date information and cite your sources. Be conversational but informative.`

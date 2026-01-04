@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, Plus, Image, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SettingsDialog } from "./SettingsDialog";
+import { SettingsDialog, GenderPronouns } from "./SettingsDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,6 +15,8 @@ interface Chat {
 interface ChatSidebarProps {
   userName: string;
   onUserNameChange: (name: string) => void;
+  userGender: GenderPronouns;
+  onUserGenderChange: (gender: GenderPronouns) => void;
   webSearchEnabled: boolean;
   onWebSearchToggle: () => void;
   onNewChat: () => void;
@@ -26,6 +28,8 @@ interface ChatSidebarProps {
 export function ChatSidebar({
   userName,
   onUserNameChange,
+  userGender,
+  onUserGenderChange,
   webSearchEnabled,
   onWebSearchToggle,
   onNewChat,
@@ -82,11 +86,11 @@ export function ChatSidebar({
           {user ? (
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-medium">
-                {(profile?.username || user.email || "U").charAt(0).toUpperCase()}
+                {(userName !== "User" ? userName : profile?.username || user.email || "U").charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">
-                  {profile?.username || user.email}
+                  {userName !== "User" ? userName : profile?.username || user.email}
                 </p>
                 {isAdmin && (
                   <p className="text-xs text-primary">Admin</p>
@@ -200,6 +204,8 @@ export function ChatSidebar({
           <SettingsDialog
             userName={userName}
             onUserNameChange={onUserNameChange}
+            userGender={userGender}
+            onUserGenderChange={onUserGenderChange}
             webSearchEnabled={webSearchEnabled}
             onWebSearchToggle={onWebSearchToggle}
             variant="sidebar"
