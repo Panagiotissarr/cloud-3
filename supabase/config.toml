@@ -1,7 +1,1 @@
-project_id = "yynxayjtrhtztzxabonj"
-
-[functions.chat]
-verify_jwt = false
-
-[functions.elevenlabs-conversation-token]
-verify_jwt = false
+project_id = "fpxtucteydpmuswitebs"
