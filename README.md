@@ -1,6 +1,7 @@
 # Welcome to Cloud
 
- - Don't Want to self host or download the code just visit this site [Here](https://pscloud.lovable.app)
+ - Don't Want to self host or download the code just visit this site [Here](https://cloud-3.lovable.app)
+ - Cloud is gonna be FOSS untill Cloud 5
 
 ## How can I edit this code?
 
@@ -14,7 +15,7 @@ Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone https://github.com/Panagiotissarr/pscloud.git
+git clone https://github.com/Panagiotissarr/cloud-3.git
 
 # Step 2: Navigate to the project directory.
 cd pscloud
