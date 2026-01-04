@@ -5,13 +5,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import luna1 from "@/assets/luna-1.jpg";
 import luna2 from "@/assets/luna-2.jpg";
 import luna3 from "@/assets/luna-3.jpg";
 
+export type GenderPronouns = "he/him" | "she/her" | "they/them" | "prefer-not-to-say";
+
 interface SettingsDialogProps {
   userName: string;
   onUserNameChange: (name: string) => void;
+  userGender: GenderPronouns;
+  onUserGenderChange: (gender: GenderPronouns) => void;
   webSearchEnabled: boolean;
   onWebSearchToggle: () => void;
   variant?: "header" | "sidebar";
@@ -22,6 +27,8 @@ const lunaImages = [luna1, luna2, luna3];
 export function SettingsDialog({
   userName,
   onUserNameChange,
+  userGender,
+  onUserGenderChange,
   webSearchEnabled,
   onWebSearchToggle,
   variant = "header",
@@ -73,6 +80,24 @@ export function SettingsDialog({
               onChange={(e) => onUserNameChange(e.target.value)}
               placeholder="User"
             />
+            <p className="text-xs text-muted-foreground">Cloud will use this name when talking to you</p>
+          </div>
+
+          {/* Gender/Pronouns Setting */}
+          <div className="space-y-2">
+            <Label htmlFor="gender">Pronouns</Label>
+            <Select value={userGender} onValueChange={(value) => onUserGenderChange(value as GenderPronouns)}>
+              <SelectTrigger id="gender" className="w-full bg-background">
+                <SelectValue placeholder="Select pronouns" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-50">
+                <SelectItem value="he/him">He/Him</SelectItem>
+                <SelectItem value="she/her">She/Her</SelectItem>
+                <SelectItem value="they/them">They/Them</SelectItem>
+                <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Cloud will use your preferred pronouns</p>
           </div>
 
           {/* Theme Toggle */}
