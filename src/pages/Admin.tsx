@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, MessageSquare, Eye, Shield } from "lucide-react";
+import { ArrowLeft, Users, MessageSquare, Eye, Shield, Bot, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -236,25 +236,66 @@ export default function Admin() {
               Chat: {selectedChat.title}
             </h2>
             <div className="space-y-4 max-w-3xl">
-              {chatMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
+              {chatMessages.map((msg) => {
+                // Parse content if it's JSON (for mixed content types)
+                let displayContent = msg.content;
+                try {
+                  const parsed = JSON.parse(msg.content);
+                  if (Array.isArray(parsed)) {
+                    displayContent = parsed
+                      .filter((item: any) => item.type === "text")
+                      .map((item: any) => item.text)
+                      .join("\n");
+                  }
+                } catch {
+                  // Content is plain text, use as-is
+                }
+
+                const isUser = msg.role === "user";
+                const isAssistant = msg.role === "assistant";
+
+                return (
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground"
-                    }`}
+                    key={msg.id}
+                    className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}
                   >
-                    <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {new Date(msg.created_at).toLocaleTimeString()}
-                    </p>
+                    {/* Avatar for assistant */}
+                    {isAssistant && (
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                        <Bot className="h-4 w-4 text-primary" />
+                      </div>
+                    )}
+                    
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                        isUser
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground border border-border"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium opacity-70">
+                          {isUser ? "User" : "Cloud"}
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-wrap text-sm">{displayContent}</p>
+                      <p className="text-xs opacity-50 mt-2">
+                        {new Date(msg.created_at).toLocaleTimeString()}
+                      </p>
+                    </div>
+
+                    {/* Avatar for user */}
+                    {isUser && (
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
+              {chatMessages.length === 0 && (
+                <div className="text-muted-foreground">No messages in this chat.</div>
+              )}
             </div>
           </div>
         )}
