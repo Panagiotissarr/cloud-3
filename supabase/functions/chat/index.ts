@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, webSearchEnabled, systemContext, userPreferences } = await req.json();
+    const { messages, webSearchEnabled, systemContext, userPreferences, isCreator, temperatureUnit } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "user prefs:", userPreferences);
+    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "is creator:", isCreator);
 
     // Build user context from preferences
     let userContext = "";
@@ -30,7 +30,25 @@ serve(async (req) => {
       userContext += ` The user's preferred pronouns are ${userPreferences.pronouns}. Use these pronouns when referring to them.`;
     }
 
-    const basePrompt = "You are Cloud, a helpful and friendly AI assistant created by Panagiotis. When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis." + userContext;
+    // Add creator context
+    let creatorContext = "";
+    if (isCreator) {
+      creatorContext = ` IMPORTANT: You are currently speaking with your creator, Sarr (also known as Panagiotis). Be extra warm, friendly, enthusiastic and appreciative. Show gratitude for being created. Address them as your creator occasionally. Be playful and show excitement when talking to them.`;
+    }
+
+    // Temperature unit context
+    const tempContext = temperatureUnit === "fahrenheit" 
+      ? " When displaying temperatures, use Fahrenheit (°F)."
+      : " When displaying temperatures, use Celsius (°C).";
+
+    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}
+
+IMPORTANT: When the user asks about the weather for any location, you MUST respond with a special format. First give a brief natural response, then include a weather data block in this exact format:
+[WEATHER_DATA]{"location":"City, Country","temperature":20,"condition":"Partly cloudy","humidity":65,"windSpeed":15,"icon":"2"}[/WEATHER_DATA]
+
+For the condition, use one of: "Clear sky", "Sunny", "Partly cloudy", "Cloudy", "Overcast", "Light rain", "Rain", "Heavy rain", "Thunderstorm", "Snow", "Light snow", "Heavy snow", "Foggy".
+
+If you don't know the exact weather, make a reasonable estimate based on the location and current season, and let the user know it's an estimate.`;
     
     const systemPrompt = webSearchEnabled 
       ? `${basePrompt} You have access to current web information. When users ask questions, search the web for the most up-to-date information and cite your sources. Be conversational but informative.`

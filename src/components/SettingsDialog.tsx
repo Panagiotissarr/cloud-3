@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, ChevronLeft, ChevronRight, Monitor, Sun, Moon, Palette } from "lucide-react";
+import { Settings, ChevronLeft, ChevronRight, Monitor, Sun, Moon, Palette, Thermometer } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -20,6 +20,7 @@ import luna2 from "@/assets/luna-2.jpg";
 import luna3 from "@/assets/luna-3.jpg";
 
 export type GenderPronouns = "he/him" | "she/her" | "they/them" | "prefer-not-to-say";
+export type TemperatureUnit = "celsius" | "fahrenheit";
 
 interface SettingsDialogProps {
   userName: string;
@@ -28,6 +29,8 @@ interface SettingsDialogProps {
   onUserGenderChange: (gender: GenderPronouns) => void;
   webSearchEnabled: boolean;
   onWebSearchToggle: () => void;
+  temperatureUnit: TemperatureUnit;
+  onTemperatureUnitChange: (unit: TemperatureUnit) => void;
   variant?: "header" | "sidebar";
 }
 
@@ -40,6 +43,8 @@ export function SettingsDialog({
   onUserGenderChange,
   webSearchEnabled,
   onWebSearchToggle,
+  temperatureUnit,
+  onTemperatureUnitChange,
   variant = "header",
 }: SettingsDialogProps) {
   const [showDogGallery, setShowDogGallery] = useState(false);
@@ -223,6 +228,24 @@ export function SettingsDialog({
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Temperature Unit */}
+          <div className="space-y-2 pt-2 border-t border-border">
+            <Label className="flex items-center gap-2">
+              <Thermometer className="h-4 w-4 text-primary" />
+              Temperature Unit
+            </Label>
+            <Select value={temperatureUnit} onValueChange={(value) => onTemperatureUnitChange(value as TemperatureUnit)}>
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-50">
+                <SelectItem value="celsius">Celsius (°C)</SelectItem>
+                <SelectItem value="fahrenheit">Fahrenheit (°F)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Cloud will display temperatures in your preferred unit</p>
           </div>
 
           {/* Web Search Toggle */}

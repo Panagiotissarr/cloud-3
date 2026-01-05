@@ -4,14 +4,16 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ChatSidebar } from "./ChatSidebar";
 import { VoiceInterface } from "./VoiceInterface";
+import { WeatherCard } from "./WeatherCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChats, Message, MessageContent } from "@/hooks/useChats";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
-import { GenderPronouns } from "./SettingsDialog";
+import { GenderPronouns, TemperatureUnit } from "./SettingsDialog";
 
 const USER_NAME_KEY = "cloud-user-name";
 const USER_GENDER_KEY = "cloud-user-gender";
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
+const TEMP_UNIT_KEY = "cloud-temperature-unit";
 
 interface ImagePreview {
   file: File;
@@ -27,6 +29,29 @@ const formatText = (text: string) => {
     }
     return part;
   });
+};
+
+// Parse weather data from message content
+interface WeatherData {
+  location: string;
+  temperature: number;
+  condition: string;
+  humidity: number;
+  windSpeed: number;
+  icon: string;
+}
+
+const parseWeatherFromText = (text: string): { cleanText: string; weather: WeatherData | null } => {
+  const weatherMatch = text.match(/\[WEATHER_DATA\]([\s\S]*?)\[\/WEATHER_DATA\]/);
+  if (!weatherMatch) return { cleanText: text, weather: null };
+  
+  try {
+    const weather = JSON.parse(weatherMatch[1]);
+    const cleanText = text.replace(/\[WEATHER_DATA\][\s\S]*?\[\/WEATHER_DATA\]/, '').trim();
+    return { cleanText, weather };
+  } catch {
+    return { cleanText: text, weather: null };
+  }
 };
 
 // Generate chat title from first message
@@ -71,6 +96,9 @@ export function CloudChat() {
   const [userGender, setUserGender] = useState<GenderPronouns>(() => {
     return (localStorage.getItem(USER_GENDER_KEY) as GenderPronouns) || "prefer-not-to-say";
   });
+  const [temperatureUnit, setTemperatureUnit] = useState<TemperatureUnit>(() => {
+    return (localStorage.getItem(TEMP_UNIT_KEY) as TemperatureUnit) || "celsius";
+  });
   const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +123,10 @@ export function CloudChat() {
   useEffect(() => {
     localStorage.setItem(USER_GENDER_KEY, userGender);
   }, [userGender]);
+
+  useEffect(() => {
+    localStorage.setItem(TEMP_UNIT_KEY, temperatureUnit);
+  }, [temperatureUnit]);
 
   // Update userName when profile loads
   useEffect(() => {
@@ -265,7 +297,9 @@ export function CloudChat() {
           messages: apiMessages, 
           webSearchEnabled,
           systemContext,
-          userPreferences
+          userPreferences,
+          isCreator,
+          temperatureUnit
         }),
       });
 
@@ -365,6 +399,8 @@ export function CloudChat() {
         onUserGenderChange={setUserGender}
         webSearchEnabled={webSearchEnabled}
         onWebSearchToggle={toggleWebSearch}
+        temperatureUnit={temperatureUnit}
+        onTemperatureUnitChange={setTemperatureUnit}
         onNewChat={handleNewChat}
         currentChatId={currentChatId}
         chats={chats}
@@ -416,19 +452,40 @@ export function CloudChat() {
                     }`}
                   >
                     {typeof message.content === "string" ? (
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {formatText(message.content)}
-                      </p>
+                      (() => {
+                        const { cleanText, weather } = parseWeatherFromText(message.content);
+                        return (
+                          <div className="space-y-3">
+                            {cleanText && (
+                              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                                {formatText(cleanText)}
+                              </p>
+                            )}
+                            {weather && message.role === "assistant" && (
+                              <WeatherCard weather={weather} unit={temperatureUnit} />
+                            )}
+                          </div>
+                        );
+                      })()
                     ) : (
                       <div className="space-y-2">
                         {(message.content as MessageContent[]).map((part, partIndex) =>
                           part.type === "text" ? (
-                            <p
-                              key={partIndex}
-                              className="whitespace-pre-wrap text-sm leading-relaxed"
-                            >
-                              {formatText(part.text || "")}
-                            </p>
+                            (() => {
+                              const { cleanText, weather } = parseWeatherFromText(part.text || "");
+                              return (
+                                <div key={partIndex} className="space-y-3">
+                                  {cleanText && (
+                                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                                      {formatText(cleanText)}
+                                    </p>
+                                  )}
+                                  {weather && message.role === "assistant" && (
+                                    <WeatherCard weather={weather} unit={temperatureUnit} />
+                                  )}
+                                </div>
+                              );
+                            })()
                           ) : part.type === "image_url" && part.image_url ? (
                             <img
                               key={partIndex}
