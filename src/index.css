@@ -4,92 +4,337 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Catppuccin Theme System
- * Light: Latte | Dark: Mocha
+/* Multi-Theme System
+ * Palettes: Catppuccin, Nord, Rosé Pine, Dracula, Custom
+ * Each palette has light and dark variants
  * All colors are in HSL format
  */
 
 @layer base {
-  /* Catppuccin Latte (Light Mode) */
   :root {
-    --background: 220 23% 95%; /* Base */
-    --foreground: 234 16% 35%; /* Text */
-
-    --card: 220 22% 92%; /* Mantle */
-    --card-foreground: 234 16% 35%; /* Text */
-
-    --popover: 220 22% 92%; /* Mantle */
-    --popover-foreground: 234 16% 35%; /* Text */
-
-    --primary: 266 85% 58%; /* Mauve */
-    --primary-foreground: 220 23% 95%; /* Base */
-
-    --secondary: 220 21% 89%; /* Crust */
-    --secondary-foreground: 234 16% 35%; /* Text */
-
-    --muted: 223 16% 83%; /* Surface0 */
-    --muted-foreground: 233 10% 47%; /* Subtext0 */
-
-    --accent: 266 85% 58%; /* Mauve */
-    --accent-foreground: 220 23% 95%; /* Base */
-
-    --destructive: 343 81% 75%; /* Red */
-    --destructive-foreground: 220 23% 95%; /* Base */
-
-    --border: 223 16% 83%; /* Surface0 */
-    --input: 220 21% 89%; /* Crust */
-    --ring: 266 85% 58%; /* Mauve */
-
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
     --radius: 1.5rem;
-
-    --sidebar-background: 220 22% 92%; /* Mantle */
-    --sidebar-foreground: 234 16% 35%; /* Text */
-    --sidebar-primary: 266 85% 58%; /* Mauve */
-    --sidebar-primary-foreground: 220 23% 95%; /* Base */
-    --sidebar-accent: 223 16% 83%; /* Surface0 */
-    --sidebar-accent-foreground: 234 16% 35%; /* Text */
-    --sidebar-border: 223 16% 83%; /* Surface0 */
-    --sidebar-ring: 266 85% 58%; /* Mauve */ --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   }
 
-  /* Catppuccin Mocha (Dark Mode) */
-  .dark {
-    --background: 240 21% 15%; /* Base */
-    --foreground: 226 64% 88%; /* Text */
+  /* ==========================================
+   * CATPPUCCIN - Latte (Light)
+   * ========================================== */
+  [data-palette="catppuccin"]:not(.dark),
+  :root:not([data-palette]) {
+    --background: 220 23% 95%;
+    --foreground: 234 16% 35%;
+    --card: 220 22% 92%;
+    --card-foreground: 234 16% 35%;
+    --popover: 220 22% 92%;
+    --popover-foreground: 234 16% 35%;
+    --primary: 266 85% 58%;
+    --primary-foreground: 220 23% 95%;
+    --secondary: 220 21% 89%;
+    --secondary-foreground: 234 16% 35%;
+    --muted: 223 16% 83%;
+    --muted-foreground: 233 10% 47%;
+    --accent: 266 85% 58%;
+    --accent-foreground: 220 23% 95%;
+    --destructive: 343 81% 53%;
+    --destructive-foreground: 220 23% 95%;
+    --border: 223 16% 83%;
+    --input: 220 21% 89%;
+    --ring: 266 85% 58%;
+    --sidebar-background: 220 22% 92%;
+    --sidebar-foreground: 234 16% 35%;
+    --sidebar-primary: 266 85% 58%;
+    --sidebar-primary-foreground: 220 23% 95%;
+    --sidebar-accent: 223 16% 83%;
+    --sidebar-accent-foreground: 234 16% 35%;
+    --sidebar-border: 223 16% 83%;
+    --sidebar-ring: 266 85% 58%;
+  }
 
-    --card: 240 21% 12%; /* Mantle */
-    --card-foreground: 226 64% 88%; /* Text */
+  /* Catppuccin - Mocha (Dark) */
+  [data-palette="catppuccin"].dark,
+  .dark:not([data-palette]) {
+    --background: 240 21% 15%;
+    --foreground: 226 64% 88%;
+    --card: 240 21% 12%;
+    --card-foreground: 226 64% 88%;
+    --popover: 240 21% 12%;
+    --popover-foreground: 226 64% 88%;
+    --primary: 267 84% 81%;
+    --primary-foreground: 240 21% 15%;
+    --secondary: 240 21% 20%;
+    --secondary-foreground: 226 64% 88%;
+    --muted: 237 16% 23%;
+    --muted-foreground: 228 24% 72%;
+    --accent: 267 84% 81%;
+    --accent-foreground: 240 21% 15%;
+    --destructive: 343 81% 75%;
+    --destructive-foreground: 240 21% 15%;
+    --border: 237 16% 23%;
+    --input: 240 21% 20%;
+    --ring: 267 84% 81%;
+    --sidebar-background: 240 21% 12%;
+    --sidebar-foreground: 226 64% 88%;
+    --sidebar-primary: 267 84% 81%;
+    --sidebar-primary-foreground: 240 21% 15%;
+    --sidebar-accent: 237 16% 23%;
+    --sidebar-accent-foreground: 226 64% 88%;
+    --sidebar-border: 237 16% 23%;
+    --sidebar-ring: 267 84% 81%;
+  }
 
-    --popover: 240 21% 12%; /* Mantle */
-    --popover-foreground: 226 64% 88%; /* Text */
+  /* ==========================================
+   * NORD - Light (Snow Storm)
+   * ========================================== */
+  [data-palette="nord"]:not(.dark) {
+    --background: 219 28% 96%;
+    --foreground: 220 16% 22%;
+    --card: 218 27% 92%;
+    --card-foreground: 220 16% 22%;
+    --popover: 218 27% 92%;
+    --popover-foreground: 220 16% 22%;
+    --primary: 213 32% 52%;
+    --primary-foreground: 219 28% 96%;
+    --secondary: 218 27% 88%;
+    --secondary-foreground: 220 16% 22%;
+    --muted: 218 27% 88%;
+    --muted-foreground: 220 16% 36%;
+    --accent: 213 32% 52%;
+    --accent-foreground: 219 28% 96%;
+    --destructive: 354 42% 56%;
+    --destructive-foreground: 219 28% 96%;
+    --border: 218 27% 82%;
+    --input: 218 27% 88%;
+    --ring: 213 32% 52%;
+    --sidebar-background: 218 27% 92%;
+    --sidebar-foreground: 220 16% 22%;
+    --sidebar-primary: 213 32% 52%;
+    --sidebar-primary-foreground: 219 28% 96%;
+    --sidebar-accent: 218 27% 88%;
+    --sidebar-accent-foreground: 220 16% 22%;
+    --sidebar-border: 218 27% 82%;
+    --sidebar-ring: 213 32% 52%;
+  }
 
-    --primary: 267 84% 81%; /* Mauve */
-    --primary-foreground: 240 21% 15%; /* Base */
+  /* Nord - Dark (Polar Night) */
+  [data-palette="nord"].dark {
+    --background: 220 16% 22%;
+    --foreground: 218 27% 92%;
+    --card: 222 16% 18%;
+    --card-foreground: 218 27% 92%;
+    --popover: 222 16% 18%;
+    --popover-foreground: 218 27% 92%;
+    --primary: 213 32% 52%;
+    --primary-foreground: 220 16% 22%;
+    --secondary: 220 17% 27%;
+    --secondary-foreground: 218 27% 92%;
+    --muted: 220 17% 27%;
+    --muted-foreground: 219 28% 78%;
+    --accent: 213 32% 52%;
+    --accent-foreground: 220 16% 22%;
+    --destructive: 354 42% 56%;
+    --destructive-foreground: 218 27% 92%;
+    --border: 220 17% 32%;
+    --input: 220 17% 27%;
+    --ring: 213 32% 52%;
+    --sidebar-background: 222 16% 18%;
+    --sidebar-foreground: 218 27% 92%;
+    --sidebar-primary: 213 32% 52%;
+    --sidebar-primary-foreground: 220 16% 22%;
+    --sidebar-accent: 220 17% 27%;
+    --sidebar-accent-foreground: 218 27% 92%;
+    --sidebar-border: 220 17% 32%;
+    --sidebar-ring: 213 32% 52%;
+  }
 
-    --secondary: 240 21% 20%; /* Surface0 */
-    --secondary-foreground: 226 64% 88%; /* Text */
+  /* ==========================================
+   * ROSÉ PINE - Dawn (Light)
+   * ========================================== */
+  [data-palette="rose"]:not(.dark) {
+    --background: 32 57% 95%;
+    --foreground: 248 19% 40%;
+    --card: 35 100% 98%;
+    --card-foreground: 248 19% 40%;
+    --popover: 35 100% 98%;
+    --popover-foreground: 248 19% 40%;
+    --primary: 343 35% 55%;
+    --primary-foreground: 32 57% 95%;
+    --secondary: 25 35% 93%;
+    --secondary-foreground: 248 19% 40%;
+    --muted: 25 35% 88%;
+    --muted-foreground: 248 12% 52%;
+    --accent: 343 35% 55%;
+    --accent-foreground: 32 57% 95%;
+    --destructive: 2 55% 63%;
+    --destructive-foreground: 32 57% 95%;
+    --border: 25 35% 85%;
+    --input: 25 35% 90%;
+    --ring: 343 35% 55%;
+    --sidebar-background: 35 100% 98%;
+    --sidebar-foreground: 248 19% 40%;
+    --sidebar-primary: 343 35% 55%;
+    --sidebar-primary-foreground: 32 57% 95%;
+    --sidebar-accent: 25 35% 88%;
+    --sidebar-accent-foreground: 248 19% 40%;
+    --sidebar-border: 25 35% 85%;
+    --sidebar-ring: 343 35% 55%;
+  }
 
-    --muted: 237 16% 23%; /* Surface1 */
-    --muted-foreground: 228 24% 72%; /* Subtext0 */
+  /* Rosé Pine - Main (Dark) */
+  [data-palette="rose"].dark {
+    --background: 249 22% 12%;
+    --foreground: 245 50% 91%;
+    --card: 247 23% 15%;
+    --card-foreground: 245 50% 91%;
+    --popover: 247 23% 15%;
+    --popover-foreground: 245 50% 91%;
+    --primary: 343 35% 72%;
+    --primary-foreground: 249 22% 12%;
+    --secondary: 247 15% 20%;
+    --secondary-foreground: 245 50% 91%;
+    --muted: 247 15% 25%;
+    --muted-foreground: 249 12% 65%;
+    --accent: 343 35% 72%;
+    --accent-foreground: 249 22% 12%;
+    --destructive: 2 55% 63%;
+    --destructive-foreground: 245 50% 91%;
+    --border: 247 15% 25%;
+    --input: 247 15% 20%;
+    --ring: 343 35% 72%;
+    --sidebar-background: 247 23% 15%;
+    --sidebar-foreground: 245 50% 91%;
+    --sidebar-primary: 343 35% 72%;
+    --sidebar-primary-foreground: 249 22% 12%;
+    --sidebar-accent: 247 15% 25%;
+    --sidebar-accent-foreground: 245 50% 91%;
+    --sidebar-border: 247 15% 25%;
+    --sidebar-ring: 343 35% 72%;
+  }
 
-    --accent: 267 84% 81%; /* Mauve */
-    --accent-foreground: 240 21% 15%; /* Base */
+  /* ==========================================
+   * DRACULA - Light (Day)
+   * ========================================== */
+  [data-palette="dracula"]:not(.dark) {
+    --background: 60 30% 96%;
+    --foreground: 231 15% 18%;
+    --card: 60 30% 94%;
+    --card-foreground: 231 15% 18%;
+    --popover: 60 30% 94%;
+    --popover-foreground: 231 15% 18%;
+    --primary: 265 89% 66%;
+    --primary-foreground: 60 30% 96%;
+    --secondary: 60 30% 90%;
+    --secondary-foreground: 231 15% 18%;
+    --muted: 60 30% 86%;
+    --muted-foreground: 231 15% 38%;
+    --accent: 265 89% 66%;
+    --accent-foreground: 60 30% 96%;
+    --destructive: 0 100% 67%;
+    --destructive-foreground: 60 30% 96%;
+    --border: 60 30% 82%;
+    --input: 60 30% 88%;
+    --ring: 265 89% 66%;
+    --sidebar-background: 60 30% 94%;
+    --sidebar-foreground: 231 15% 18%;
+    --sidebar-primary: 265 89% 66%;
+    --sidebar-primary-foreground: 60 30% 96%;
+    --sidebar-accent: 60 30% 86%;
+    --sidebar-accent-foreground: 231 15% 18%;
+    --sidebar-border: 60 30% 82%;
+    --sidebar-ring: 265 89% 66%;
+  }
 
-    --destructive: 343 81% 75%; /* Red */
-    --destructive-foreground: 240 21% 15%; /* Base */
+  /* Dracula - Dark (Original) */
+  [data-palette="dracula"].dark {
+    --background: 231 15% 18%;
+    --foreground: 60 30% 96%;
+    --card: 232 14% 14%;
+    --card-foreground: 60 30% 96%;
+    --popover: 232 14% 14%;
+    --popover-foreground: 60 30% 96%;
+    --primary: 265 89% 78%;
+    --primary-foreground: 231 15% 18%;
+    --secondary: 232 14% 25%;
+    --secondary-foreground: 60 30% 96%;
+    --muted: 232 14% 28%;
+    --muted-foreground: 60 30% 76%;
+    --accent: 265 89% 78%;
+    --accent-foreground: 231 15% 18%;
+    --destructive: 0 100% 67%;
+    --destructive-foreground: 60 30% 96%;
+    --border: 232 14% 28%;
+    --input: 232 14% 25%;
+    --ring: 265 89% 78%;
+    --sidebar-background: 232 14% 14%;
+    --sidebar-foreground: 60 30% 96%;
+    --sidebar-primary: 265 89% 78%;
+    --sidebar-primary-foreground: 231 15% 18%;
+    --sidebar-accent: 232 14% 28%;
+    --sidebar-accent-foreground: 60 30% 96%;
+    --sidebar-border: 232 14% 28%;
+    --sidebar-ring: 265 89% 78%;
+  }
 
-    --border: 237 16% 23%; /* Surface1 */
-    --input: 240 21% 20%; /* Surface0 */
-    --ring: 267 84% 81%; /* Mauve */
+  /* ==========================================
+   * CUSTOM - Uses CSS custom properties set via JS
+   * ========================================== */
+  [data-palette="custom"]:not(.dark) {
+    --background: var(--custom-background, 220 23% 95%);
+    --foreground: var(--custom-foreground, 234 16% 35%);
+    --card: var(--custom-background, 220 23% 95%);
+    --card-foreground: var(--custom-foreground, 234 16% 35%);
+    --popover: var(--custom-background, 220 23% 95%);
+    --popover-foreground: var(--custom-foreground, 234 16% 35%);
+    --primary: var(--custom-primary, 266 85% 58%);
+    --primary-foreground: var(--custom-background, 220 23% 95%);
+    --secondary: var(--custom-background, 220 23% 95%);
+    --secondary-foreground: var(--custom-foreground, 234 16% 35%);
+    --muted: var(--custom-background, 220 23% 95%);
+    --muted-foreground: var(--custom-foreground, 234 16% 35%);
+    --accent: var(--custom-primary, 266 85% 58%);
+    --accent-foreground: var(--custom-background, 220 23% 95%);
+    --destructive: 343 81% 53%;
+    --destructive-foreground: var(--custom-background, 220 23% 95%);
+    --border: var(--custom-foreground, 234 16% 35%);
+    --input: var(--custom-background, 220 23% 95%);
+    --ring: var(--custom-primary, 266 85% 58%);
+    --sidebar-background: var(--custom-background, 220 23% 95%);
+    --sidebar-foreground: var(--custom-foreground, 234 16% 35%);
+    --sidebar-primary: var(--custom-primary, 266 85% 58%);
+    --sidebar-primary-foreground: var(--custom-background, 220 23% 95%);
+    --sidebar-accent: var(--custom-background, 220 23% 95%);
+    --sidebar-accent-foreground: var(--custom-foreground, 234 16% 35%);
+    --sidebar-border: var(--custom-foreground, 234 16% 35%);
+    --sidebar-ring: var(--custom-primary, 266 85% 58%);
+  }
 
-    --sidebar-background: 240 21% 12%; /* Mantle */
-    --sidebar-foreground: 226 64% 88%; /* Text */
-    --sidebar-primary: 267 84% 81%; /* Mauve */
-    --sidebar-primary-foreground: 240 21% 15%; /* Base */
-    --sidebar-accent: 237 16% 23%; /* Surface1 */
-    --sidebar-accent-foreground: 226 64% 88%; /* Text */
-    --sidebar-border: 237 16% 23%; /* Surface1 */
-    --sidebar-ring: 267 84% 81%; /* Mauve */ --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  [data-palette="custom"].dark {
+    --background: var(--custom-background, 240 21% 15%);
+    --foreground: var(--custom-foreground, 226 64% 88%);
+    --card: var(--custom-background, 240 21% 15%);
+    --card-foreground: var(--custom-foreground, 226 64% 88%);
+    --popover: var(--custom-background, 240 21% 15%);
+    --popover-foreground: var(--custom-foreground, 226 64% 88%);
+    --primary: var(--custom-primary, 267 84% 81%);
+    --primary-foreground: var(--custom-background, 240 21% 15%);
+    --secondary: var(--custom-background, 240 21% 15%);
+    --secondary-foreground: var(--custom-foreground, 226 64% 88%);
+    --muted: var(--custom-background, 240 21% 15%);
+    --muted-foreground: var(--custom-foreground, 226 64% 88%);
+    --accent: var(--custom-primary, 267 84% 81%);
+    --accent-foreground: var(--custom-background, 240 21% 15%);
+    --destructive: 343 81% 75%;
+    --destructive-foreground: var(--custom-background, 240 21% 15%);
+    --border: var(--custom-foreground, 226 64% 88%);
+    --input: var(--custom-background, 240 21% 15%);
+    --ring: var(--custom-primary, 267 84% 81%);
+    --sidebar-background: var(--custom-background, 240 21% 15%);
+    --sidebar-foreground: var(--custom-foreground, 226 64% 88%);
+    --sidebar-primary: var(--custom-primary, 267 84% 81%);
+    --sidebar-primary-foreground: var(--custom-background, 240 21% 15%);
+    --sidebar-accent: var(--custom-background, 240 21% 15%);
+    --sidebar-accent-foreground: var(--custom-foreground, 226 64% 88%);
+    --sidebar-border: var(--custom-foreground, 226 64% 88%);
+    --sidebar-ring: var(--custom-primary, 267 84% 81%);
   }
 }
 
