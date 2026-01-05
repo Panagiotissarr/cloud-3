@@ -1,11 +1,20 @@
 import { useState } from "react";
-import { Settings, ChevronLeft, ChevronRight, Sun, Moon } from "lucide-react";
+import { Settings, ChevronLeft, ChevronRight, Monitor, Sun, Moon, Palette } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  ThemeMode,
+  ThemePalette,
+  CatppuccinAccent,
+  paletteDisplayNames,
+  modeDisplayNames,
+  accentDisplayNames,
+  catppuccinAccents,
+} from "@/lib/themes";
 import luna1 from "@/assets/luna-1.jpg";
 import luna2 from "@/assets/luna-2.jpg";
 import luna3 from "@/assets/luna-3.jpg";
@@ -35,7 +44,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [showDogGallery, setShowDogGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const { theme, toggleTheme } = useTheme();
+  const { config, setMode, setPalette, setAccent, setCustomColors, effectiveMode } = useTheme();
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % lunaImages.length);
@@ -44,6 +53,9 @@ export function SettingsDialog({
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + lunaImages.length) % lunaImages.length);
   };
+
+  const modeIcon = config.mode === "system" ? Monitor : config.mode === "dark" ? Moon : Sun;
+  const ModeIcon = modeIcon;
 
   const triggerButton = variant === "sidebar" ? (
     <button
@@ -65,7 +77,7 @@ export function SettingsDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
@@ -100,26 +112,121 @@ export function SettingsDialog({
             <p className="text-xs text-muted-foreground">Cloud will use your preferred pronouns</p>
           </div>
 
-          {/* Theme Toggle */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="theme" className="flex items-center gap-2">
-              {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              Theme
-            </Label>
+          {/* Theme Section */}
+          <div className="space-y-4 pt-2 border-t border-border">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {theme === "dark" ? "Mocha" : "Latte"}
-              </span>
-              <Switch
-                id="theme"
-                checked={theme === "dark"}
-                onCheckedChange={toggleTheme}
-              />
+              <Palette className="h-4 w-4 text-primary" />
+              <span className="font-medium">Appearance</span>
             </div>
+
+            {/* Mode Selector */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <ModeIcon className="h-4 w-4" />
+                Mode
+              </Label>
+              <Select value={config.mode} onValueChange={(value) => setMode(value as ThemeMode)}>
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border z-50">
+                  {(Object.keys(modeDisplayNames) as ThemeMode[]).map((mode) => (
+                    <SelectItem key={mode} value={mode}>
+                      {modeDisplayNames[mode]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Palette Selector */}
+            <div className="space-y-2">
+              <Label>Color Palette</Label>
+              <Select value={config.palette} onValueChange={(value) => setPalette(value as ThemePalette)}>
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border z-50">
+                  {(Object.keys(paletteDisplayNames) as ThemePalette[]).map((palette) => (
+                    <SelectItem key={palette} value={palette}>
+                      {paletteDisplayNames[palette]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Catppuccin Accent Color */}
+            {config.palette === "catppuccin" && (
+              <div className="space-y-2">
+                <Label>Accent Color</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(Object.keys(catppuccinAccents) as CatppuccinAccent[]).map((accent) => {
+                    const colors = catppuccinAccents[accent];
+                    const color = effectiveMode === "dark" ? colors.dark : colors.light;
+                    const isSelected = config.catppuccinAccent === accent;
+                    
+                    return (
+                      <button
+                        key={accent}
+                        onClick={() => setAccent(accent)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-muted-foreground"
+                        }`}
+                      >
+                        <div
+                          className="h-4 w-4 rounded-full"
+                          style={{ backgroundColor: `hsl(${color})` }}
+                        />
+                        <span className="text-xs">{accentDisplayNames[accent]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Custom Colors */}
+            {config.palette === "custom" && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="custom-primary">Primary Color (HSL)</Label>
+                  <Input
+                    id="custom-primary"
+                    value={config.customColors.primary}
+                    onChange={(e) => setCustomColors({ primary: e.target.value })}
+                    placeholder="266 85% 58%"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="custom-bg">Background (HSL)</Label>
+                  <Input
+                    id="custom-bg"
+                    value={config.customColors.background}
+                    onChange={(e) => setCustomColors({ background: e.target.value })}
+                    placeholder="240 21% 15%"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="custom-fg">Foreground (HSL)</Label>
+                  <Input
+                    id="custom-fg"
+                    value={config.customColors.foreground}
+                    onChange={(e) => setCustomColors({ foreground: e.target.value })}
+                    placeholder="226 64% 88%"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter colors in HSL format without hsl() wrapper, e.g., "266 85% 58%"
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Web Search Toggle */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2 border-t border-border">
             <Label htmlFor="websearch">Web Search</Label>
             <Switch
               id="websearch"
