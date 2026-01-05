@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, Plus, Image, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SettingsDialog, GenderPronouns } from "./SettingsDialog";
+import { SettingsDialog, GenderPronouns, TemperatureUnit } from "./SettingsDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,6 +19,8 @@ interface ChatSidebarProps {
   onUserGenderChange: (gender: GenderPronouns) => void;
   webSearchEnabled: boolean;
   onWebSearchToggle: () => void;
+  temperatureUnit: TemperatureUnit;
+  onTemperatureUnitChange: (unit: TemperatureUnit) => void;
   onNewChat: () => void;
   currentChatId: string | null;
   chats: Chat[];
@@ -32,6 +34,8 @@ export function ChatSidebar({
   onUserGenderChange,
   webSearchEnabled,
   onWebSearchToggle,
+  temperatureUnit,
+  onTemperatureUnitChange,
   onNewChat,
   currentChatId,
   chats,
@@ -208,6 +212,8 @@ export function ChatSidebar({
             onUserGenderChange={onUserGenderChange}
             webSearchEnabled={webSearchEnabled}
             onWebSearchToggle={onWebSearchToggle}
+            temperatureUnit={temperatureUnit}
+            onTemperatureUnitChange={onTemperatureUnitChange}
             variant="sidebar"
           />
           
