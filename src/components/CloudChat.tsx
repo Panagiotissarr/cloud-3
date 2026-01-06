@@ -54,6 +54,20 @@ const parseWeatherFromText = (text: string): { cleanText: string; weather: Weath
   }
 };
 
+// Parse image gallery from message content
+const parseImagesFromText = (text: string): { cleanText: string; images: string[] } => {
+  const imageMatch = text.match(/\[IMAGE_GALLERY\]([\s\S]*?)\[\/IMAGE_GALLERY\]/);
+  if (!imageMatch) return { cleanText: text, images: [] };
+  
+  try {
+    const images = JSON.parse(imageMatch[1]);
+    const cleanText = text.replace(/\[IMAGE_GALLERY\][\s\S]*?\[\/IMAGE_GALLERY\]/, '').trim();
+    return { cleanText, images: Array.isArray(images) ? images : [] };
+  } catch {
+    return { cleanText: text, images: [] };
+  }
+};
+
 // Generate chat title from first message
 const generateChatTitle = (message: Message): string => {
   const content = typeof message.content === "string" 
@@ -454,9 +468,32 @@ export function CloudChat() {
                   >
                     {typeof message.content === "string" ? (
                       (() => {
-                        const { cleanText, weather } = parseWeatherFromText(message.content);
+                        const { cleanText: textWithoutImages, images } = parseImagesFromText(message.content);
+                        const { cleanText, weather } = parseWeatherFromText(textWithoutImages);
                         return (
                           <div className="space-y-3">
+                            {images.length > 0 && message.role === "assistant" && (
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                                {images.map((url, imgIndex) => (
+                                  <a
+                                    key={imgIndex}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block overflow-hidden rounded-lg hover:opacity-90 transition-opacity"
+                                  >
+                                    <img
+                                      src={url}
+                                      alt={`Result ${imgIndex + 1}`}
+                                      className="w-full h-24 sm:h-32 object-cover bg-muted"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
                             {cleanText && (
                               <p className="whitespace-pre-wrap text-sm leading-relaxed">
                                 {formatText(cleanText)}
