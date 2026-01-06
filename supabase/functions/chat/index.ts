@@ -5,6 +5,93 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Detect if user is asking for images
+function detectImageRequest(messages: any[]): string | null {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== "user") return null;
+  
+  const content = typeof lastMessage.content === "string" 
+    ? lastMessage.content 
+    : lastMessage.content?.find((c: any) => c.type === "text")?.text || "";
+  
+  const lowerContent = content.toLowerCase();
+  
+  // Patterns like "show me images of X", "pictures of X", "photos of X", "image of X"
+  const patterns = [
+    /(?:show\s+(?:me\s+)?(?:some\s+)?(?:images?|pictures?|photos?)\s+(?:of|for)\s+)(.+)/i,
+    /(?:find\s+(?:me\s+)?(?:some\s+)?(?:images?|pictures?|photos?)\s+(?:of|for)\s+)(.+)/i,
+    /(?:get\s+(?:me\s+)?(?:some\s+)?(?:images?|pictures?|photos?)\s+(?:of|for)\s+)(.+)/i,
+    /(?:(?:images?|pictures?|photos?)\s+(?:of|for)\s+)(.+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = lowerContent.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  
+  return null;
+}
+
+// Search for images using Google Custom Search API simulation via web search
+async function searchImages(query: string, apiKey: string): Promise<string[]> {
+  try {
+    console.log("Searching images for:", query);
+    
+    // Use web search to find image URLs
+    const searchResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a helpful assistant that finds image URLs. Return ONLY a JSON array of 5 image URLs, nothing else. The URLs should be direct links to images (ending in .jpg, .png, .webp, or similar) from reputable sources like Unsplash, Pexels, Pixabay, or Wikipedia Commons. Format: [\"url1\", \"url2\", \"url3\", \"url4\", \"url5\"]" 
+          },
+          { 
+            role: "user", 
+            content: `Find 5 high-quality image URLs for: ${query}` 
+          }
+        ],
+        tools: [{ googleSearch: {} }],
+      }),
+    });
+
+    if (!searchResponse.ok) {
+      console.error("Image search failed:", await searchResponse.text());
+      return [];
+    }
+
+    const data = await searchResponse.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    
+    // Extract JSON array from response
+    const jsonMatch = content.match(/\[[\s\S]*?\]/);
+    if (jsonMatch) {
+      try {
+        const urls = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(urls)) {
+          return urls.filter((url: string) => 
+            typeof url === "string" && url.startsWith("http")
+          ).slice(0, 5);
+        }
+      } catch (e) {
+        console.error("Failed to parse image URLs:", e);
+      }
+    }
+    
+    return [];
+  } catch (error) {
+    console.error("Image search error:", error);
+    return [];
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,6 +107,16 @@ serve(async (req) => {
     }
 
     console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "is creator:", isCreator);
+
+    // Check if this is an image search request
+    const imageQuery = detectImageRequest(messages);
+    let imageUrls: string[] = [];
+    
+    if (imageQuery) {
+      console.log("Detected image request for:", imageQuery);
+      imageUrls = await searchImages(imageQuery, LOVABLE_API_KEY);
+      console.log("Found images:", imageUrls.length);
+    }
 
     // Build user context from preferences
     let userContext = "";
@@ -41,7 +138,16 @@ serve(async (req) => {
       ? " When displaying temperatures, use Fahrenheit (°F)."
       : " When displaying temperatures, use Celsius (°C).";
 
-    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}
+    // Image context
+    let imageContext = "";
+    if (imageUrls.length > 0) {
+      imageContext = `\n\nIMPORTANT: You found images for the user's request. Start your response with this EXACT block (on its own line, no extra text before it):
+[IMAGE_GALLERY]${JSON.stringify(imageUrls)}[/IMAGE_GALLERY]
+
+Then provide a brief, friendly description about what you found.`;
+    }
+
+    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}${imageContext}
 
 IMPORTANT: When the user asks about the weather for any location, you MUST respond with a special format. First give a brief natural response, then include a weather data block in this exact format:
 [WEATHER_DATA]{"location":"City, Country","temperature":20,"condition":"Partly cloudy","humidity":65,"windSpeed":15,"icon":"2"}[/WEATHER_DATA]
