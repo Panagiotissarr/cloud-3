@@ -72,6 +72,7 @@ export function CloudChat() {
     createChat,
     addMessage,
     updateLastMessage,
+    saveAssistantMessage,
     selectChat,
     newChat,
   } = useChats();
@@ -360,9 +361,9 @@ export function CloudChat() {
         }
       }
 
-      // Save assistant message to database
+      // Save assistant message to database (without adding to messages state again)
       if (currentChatId && assistantContent) {
-        await addMessage(currentChatId, { role: "assistant", content: assistantContent });
+        await saveAssistantMessage(currentChatId, assistantContent);
       }
 
       if (!assistantContent) {
