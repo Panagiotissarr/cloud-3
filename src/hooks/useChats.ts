@@ -184,6 +184,50 @@ export function useChats() {
       }
       return [...prev, { role: "assistant" as const, content }];
     });
+
+    // Also update in chats state
+    setChats((prev) => {
+      if (!currentChatId) return prev;
+      return prev.map((c) => {
+        if (c.id !== currentChatId) return c;
+        const lastMsg = c.messages[c.messages.length - 1];
+        if (lastMsg?.role === "assistant") {
+          return {
+            ...c,
+            messages: c.messages.map((m, i) =>
+              i === c.messages.length - 1 ? { ...m, content } : m
+            ),
+          };
+        }
+        return {
+          ...c,
+          messages: [...c.messages, { role: "assistant" as const, content }],
+        };
+      });
+    });
+  };
+
+  const saveAssistantMessage = async (chatId: string, content: string) => {
+    if (user) {
+      await supabase.from("messages").insert({
+        chat_id: chatId,
+        user_id: user.id,
+        role: "assistant",
+        content,
+      });
+
+      await supabase
+        .from("chats")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", chatId);
+    }
+
+    if (!user) {
+      setChats((prev) => {
+        saveLocalChats(prev);
+        return prev;
+      });
+    }
   };
 
   const selectChat = (chatId: string) => {
@@ -209,6 +253,7 @@ export function useChats() {
     createChat,
     addMessage,
     updateLastMessage,
+    saveAssistantMessage,
     selectChat,
     newChat,
   };
