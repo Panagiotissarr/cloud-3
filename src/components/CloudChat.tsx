@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Cloud, Send, Image, X, Mic, PhoneOff } from "lucide-react";
+import { Cloud, Send, Image, X, Mic, PhoneOff, ChevronDown, Sparkles, Globe } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ChatSidebar } from "./ChatSidebar";
@@ -472,26 +477,55 @@ export function CloudChat() {
                         const { cleanText, weather } = parseWeatherFromText(textWithoutImages);
                         return (
                           <div className="space-y-3">
-                            {images.length > 0 && message.role === "assistant" && (
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-                                {images.map((url, imgIndex) => (
-                                  <a
-                                    key={imgIndex}
-                                    href={url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block overflow-hidden rounded-lg hover:opacity-90 transition-opacity"
-                                  >
-                                    <img
-                                      src={url}
-                                      alt={`Result ${imgIndex + 1}`}
-                                      className="w-full h-24 sm:h-32 object-cover bg-muted"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                      }}
-                                    />
-                                  </a>
-                                ))}
+                            {(images.length > 0 || message.role === "assistant") && (
+                              <div className="space-y-2 mb-3">
+                                {/* AI Generated Images - Coming Soon */}
+                                <Collapsible>
+                                  <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
+                                    <ChevronDown className="h-3 w-3 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                                    <Sparkles className="h-3 w-3" />
+                                    <span>AI Generated Images</span>
+                                    <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded">Coming Soon</span>
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent className="pt-2">
+                                    <div className="flex items-center justify-center h-20 bg-muted/50 rounded-lg border border-dashed border-muted-foreground/30">
+                                      <p className="text-xs text-muted-foreground">AI image generation coming soon</p>
+                                    </div>
+                                  </CollapsibleContent>
+                                </Collapsible>
+
+                                {/* Web Images */}
+                                {images.length > 0 && (
+                                  <Collapsible defaultOpen>
+                                    <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
+                                      <ChevronDown className="h-3 w-3 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                                      <Globe className="h-3 w-3" />
+                                      <span>Web Images ({images.length})</span>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent className="pt-2">
+                                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {images.map((url, imgIndex) => (
+                                          <a
+                                            key={imgIndex}
+                                            href={url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block overflow-hidden rounded-lg hover:opacity-90 transition-opacity"
+                                          >
+                                            <img
+                                              src={url}
+                                              alt={`Result ${imgIndex + 1}`}
+                                              className="w-full h-24 sm:h-32 object-cover bg-muted"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                              }}
+                                            />
+                                          </a>
+                                        ))}
+                                      </div>
+                                    </CollapsibleContent>
+                                  </Collapsible>
+                                )}
                               </div>
                             )}
                             {cleanText && (
