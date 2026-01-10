@@ -66,6 +66,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          lab_id: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -73,6 +74,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          lab_id?: string | null
           title?: string
           updated_at?: string | null
           user_id: string
@@ -80,8 +82,85 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          lab_id?: string | null
           title?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_lab_id_fkey"
+            columns: ["lab_id"]
+            isOneToOne: false
+            referencedRelation: "labs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_content: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lab_id: string
+          title: string
+          type: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          lab_id: string
+          title: string
+          type: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lab_id?: string
+          title?: string
+          type?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_content_lab_id_fkey"
+            columns: ["lab_id"]
+            isOneToOne: false
+            referencedRelation: "labs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      labs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
