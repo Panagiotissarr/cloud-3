@@ -98,7 +98,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, webSearchEnabled, systemContext, userPreferences, isCreator, temperatureUnit } = await req.json();
+    const { messages, webSearchEnabled, systemContext, userPreferences, isCreator, temperatureUnit, labContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -106,7 +106,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "is creator:", isCreator);
+    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "is creator:", isCreator, "has lab context:", !!labContext);
 
     // Check if this is an image search request
     const imageQuery = detectImageRequest(messages);
@@ -147,7 +147,13 @@ serve(async (req) => {
 Then provide a brief, friendly description about what you found.`;
     }
 
-    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}${imageContext}
+    // Lab context
+    let labContextPrompt = "";
+    if (labContext) {
+      labContextPrompt = `\n\nIMPORTANT - You have access to the following knowledge base provided by the user. Use this information to answer their questions when relevant:\n\n${labContext}`;
+    }
+
+    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}${imageContext}${labContextPrompt}
 
 IMPORTANT: When the user asks about the weather for any location, you MUST respond with a special format. First give a brief natural response, then include a weather data block in this exact format:
 [WEATHER_DATA]{"location":"City, Country","temperature":20,"condition":"Partly cloudy","humidity":65,"windSpeed":15,"icon":"2"}[/WEATHER_DATA]

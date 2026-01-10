@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Plus, Image, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X } from "lucide-react";
+import { Menu, Plus, Image, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog, GenderPronouns, TemperatureUnit } from "./SettingsDialog";
+import { LabsManager } from "./LabsManager";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -44,6 +45,7 @@ export function ChatSidebar({
   const [isOpen, setIsOpen] = useState(false);
   const [showAllChats, setShowAllChats] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showLabsModal, setShowLabsModal] = useState(false);
 
   const { user, isAdmin, signOut, profile } = useAuth();
   const navigate = useNavigate();
@@ -119,6 +121,20 @@ export function ChatSidebar({
           >
             <Plus className="h-5 w-5" />
             <span className="font-medium">New Chat</span>
+          </button>
+
+          <button
+            onClick={() => setShowLabsModal(true)}
+            disabled={!user}
+            className={cn(
+              "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
+              user 
+                ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+            )}
+          >
+            <FlaskConical className="h-5 w-5" />
+            <span className="font-medium">Cloud Labs</span>
           </button>
 
           <button
@@ -272,6 +288,21 @@ export function ChatSidebar({
             >
               Got it
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cloud Labs Modal */}
+      {showLabsModal && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in"
+          onClick={() => setShowLabsModal(false)}
+        >
+          <div 
+            className="bg-secondary rounded-2xl max-w-3xl w-full mx-4 animate-scale-in overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <LabsManager onClose={() => setShowLabsModal(false)} />
           </div>
         </div>
       )}

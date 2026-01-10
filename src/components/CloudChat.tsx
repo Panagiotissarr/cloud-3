@@ -10,9 +10,11 @@ import { cn } from "@/lib/utils";
 import { ChatSidebar } from "./ChatSidebar";
 import { VoiceInterface } from "./VoiceInterface";
 import { WeatherCard } from "./WeatherCard";
+import { LabSelector } from "./LabSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChats, Message, MessageContent } from "@/hooks/useChats";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
+import { useLabs } from "@/hooks/useLabs";
 import { GenderPronouns, TemperatureUnit } from "./SettingsDialog";
 
 const USER_NAME_KEY = "cloud-user-name";
@@ -95,6 +97,13 @@ export function CloudChat() {
     selectChat,
     newChat,
   } = useChats();
+  
+  const {
+    labs,
+    selectedLabId,
+    setSelectedLabId,
+    getLabContext,
+  } = useLabs();
   
   const {
     isConnected: isVoiceConnected,
@@ -306,6 +315,12 @@ export function CloudChat() {
       // Add creator context if applicable
       const systemContext = getSystemContext();
       const userPreferences = getUserPreferences();
+      
+      // Get lab context if a lab is selected
+      let labContext = "";
+      if (selectedLabId) {
+        labContext = await getLabContext(selectedLabId);
+      }
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -319,7 +334,8 @@ export function CloudChat() {
           systemContext,
           userPreferences,
           isCreator,
-          temperatureUnit
+          temperatureUnit,
+          labContext
         }),
       });
 
@@ -434,7 +450,19 @@ export function CloudChat() {
       />
 
       {/* Header */}
-      <header className="flex items-center justify-end px-6 py-4">
+      <header className="flex items-center justify-between px-6 py-4">
+        {/* Lab Selector */}
+        <div className="flex items-center gap-2">
+          {user && labs.length > 0 && (
+            <LabSelector
+              labs={labs}
+              selectedLabId={selectedLabId}
+              onSelectLab={setSelectedLabId}
+              disabled={isLoading}
+            />
+          )}
+        </div>
+        
         <div className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2">
           <Cloud className="h-5 w-5 text-foreground" />
           <span className="font-medium text-foreground">Cloud</span>
