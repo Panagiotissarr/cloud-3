@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Plus, Image, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X, FlaskConical } from "lucide-react";
+import { Menu, Plus, Image, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X, FlaskConical, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog, GenderPronouns, TemperatureUnit } from "./SettingsDialog";
 import { LabsManager } from "./LabsManager";
+import { ColabManager } from "./ColabManager";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,6 +47,7 @@ export function ChatSidebar({
   const [showAllChats, setShowAllChats] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [showLabsModal, setShowLabsModal] = useState(false);
+  const [showColabModal, setShowColabModal] = useState(false);
 
   const { user, isAdmin, signOut, profile } = useAuth();
   const navigate = useNavigate();
@@ -135,6 +137,20 @@ export function ChatSidebar({
           >
             <FlaskConical className="h-5 w-5" />
             <span className="font-medium">Cloud Labs</span>
+          </button>
+
+          <button
+            onClick={() => setShowColabModal(true)}
+            disabled={!user}
+            className={cn(
+              "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
+              user 
+                ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+            )}
+          >
+            <Users className="h-5 w-5" />
+            <span className="font-medium">Cloud Colab</span>
           </button>
 
           <button
@@ -303,6 +319,25 @@ export function ChatSidebar({
             onClick={(e) => e.stopPropagation()}
           >
             <LabsManager onClose={() => setShowLabsModal(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Cloud Colab Modal */}
+      {showColabModal && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in"
+          onClick={() => setShowColabModal(false)}
+        >
+          <div 
+            className="bg-secondary rounded-2xl max-w-2xl w-full mx-4 h-[80vh] animate-scale-in overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ColabManager 
+              onClose={() => setShowColabModal(false)} 
+              webSearchEnabled={webSearchEnabled}
+              temperatureUnit={temperatureUnit}
+            />
           </div>
         </div>
       )}
