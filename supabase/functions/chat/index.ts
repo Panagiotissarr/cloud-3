@@ -98,7 +98,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, webSearchEnabled, systemContext, userPreferences, isCreator, temperatureUnit, labContext } = await req.json();
+    const { messages, webSearchEnabled, systemContext, userPreferences, isCreator, temperatureUnit, labContext, cloudPlusEnabled } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -106,10 +106,10 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "is creator:", isCreator, "has lab context:", !!labContext);
+    console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "is creator:", isCreator, "has lab context:", !!labContext, "cloud+:", cloudPlusEnabled);
 
-    // Check if this is an image search request
-    const imageQuery = detectImageRequest(messages);
+    // Check if this is an image search request (only if Cloud+ is enabled)
+    const imageQuery = cloudPlusEnabled !== false ? detectImageRequest(messages) : null;
     let imageUrls: string[] = [];
     
     if (imageQuery) {
