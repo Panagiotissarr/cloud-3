@@ -97,6 +97,100 @@ export type Database = {
           },
         ]
       }
+      colab_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          sender_name: string | null
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          sender_name?: string | null
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          sender_name?: string | null
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colab_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "colab_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      colab_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colab_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "colab_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      colab_sessions: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lab_content: {
         Row: {
           content: string
@@ -247,6 +341,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_session_by_code: {
+        Args: { session_code: string }
+        Returns: {
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
