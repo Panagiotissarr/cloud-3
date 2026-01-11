@@ -21,6 +21,7 @@ const USER_NAME_KEY = "cloud-user-name";
 const USER_GENDER_KEY = "cloud-user-gender";
 const WEB_SEARCH_KEY = "cloud-web-search-enabled";
 const TEMP_UNIT_KEY = "cloud-temperature-unit";
+const CLOUD_PLUS_KEY = "cloud-plus-enabled";
 
 interface ImagePreview {
   file: File;
@@ -128,6 +129,11 @@ export function CloudChat() {
   const [temperatureUnit, setTemperatureUnit] = useState<TemperatureUnit>(() => {
     return (localStorage.getItem(TEMP_UNIT_KEY) as TemperatureUnit) || "celsius";
   });
+  const [cloudPlusEnabled, setCloudPlusEnabled] = useState(() => {
+    const stored = localStorage.getItem(CLOUD_PLUS_KEY);
+    // Default to true for new users
+    return stored === null ? true : stored === "true";
+  });
   const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -157,6 +163,10 @@ export function CloudChat() {
     localStorage.setItem(TEMP_UNIT_KEY, temperatureUnit);
   }, [temperatureUnit]);
 
+  useEffect(() => {
+    localStorage.setItem(CLOUD_PLUS_KEY, String(cloudPlusEnabled));
+  }, [cloudPlusEnabled]);
+
   // Update userName when profile loads
   useEffect(() => {
     if (profile?.display_name) {
@@ -171,6 +181,16 @@ export function CloudChat() {
       description: webSearchEnabled
         ? "Cloud will now use its built-in knowledge only"
         : "Cloud can now browse the web for current information",
+    });
+  };
+
+  const toggleCloudPlus = () => {
+    setCloudPlusEnabled((prev) => !prev);
+    toast({
+      title: cloudPlusEnabled ? "Cloud+ Disabled" : "Cloud+ Enabled",
+      description: cloudPlusEnabled
+        ? "Cloud+ features are now hidden"
+        : "Cloud+ features are now available",
     });
   };
 
@@ -316,9 +336,9 @@ export function CloudChat() {
       const systemContext = getSystemContext();
       const userPreferences = getUserPreferences();
       
-      // Get lab context if a lab is selected
+      // Get lab context if a lab is selected (Cloud+ feature)
       let labContext = "";
-      if (selectedLabId) {
+      if (cloudPlusEnabled && selectedLabId) {
         labContext = await getLabContext(selectedLabId);
       }
 
@@ -335,7 +355,8 @@ export function CloudChat() {
           userPreferences,
           isCreator,
           temperatureUnit,
-          labContext
+          labContext,
+          cloudPlusEnabled  // Pass to backend for image search
         }),
       });
 
@@ -437,6 +458,8 @@ export function CloudChat() {
         onWebSearchToggle={toggleWebSearch}
         temperatureUnit={temperatureUnit}
         onTemperatureUnitChange={setTemperatureUnit}
+        cloudPlusEnabled={cloudPlusEnabled}
+        onCloudPlusToggle={toggleCloudPlus}
         onNewChat={handleNewChat}
         currentChatId={currentChatId}
         chats={chats}
@@ -451,9 +474,9 @@ export function CloudChat() {
 
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4">
-        {/* Lab Selector */}
+        {/* Lab Selector - Cloud+ feature */}
         <div className="flex items-center gap-2">
-          {user && labs.length > 0 && (
+          {cloudPlusEnabled && user && labs.length > 0 && (
             <LabSelector
               labs={labs}
               selectedLabId={selectedLabId}
@@ -505,7 +528,7 @@ export function CloudChat() {
                         const { cleanText, weather } = parseWeatherFromText(textWithoutImages);
                         return (
                           <div className="space-y-3">
-                            {(images.length > 0 || message.role === "assistant") && (
+                            {cloudPlusEnabled && (images.length > 0 || message.role === "assistant") && (
                               <div className="space-y-2 mb-3">
                                 {/* AI Generated Images - Coming Soon */}
                                 <Collapsible>

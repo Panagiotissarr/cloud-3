@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, ChevronLeft, ChevronRight, Monitor, Sun, Moon, Palette, Thermometer } from "lucide-react";
+import { Settings, ChevronLeft, ChevronRight, Monitor, Sun, Moon, Palette, Thermometer, Sparkles } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -31,6 +31,8 @@ interface SettingsDialogProps {
   onWebSearchToggle: () => void;
   temperatureUnit: TemperatureUnit;
   onTemperatureUnitChange: (unit: TemperatureUnit) => void;
+  cloudPlusEnabled: boolean;
+  onCloudPlusToggle: () => void;
   variant?: "header" | "sidebar";
 }
 
@@ -45,6 +47,8 @@ export function SettingsDialog({
   onWebSearchToggle,
   temperatureUnit,
   onTemperatureUnitChange,
+  cloudPlusEnabled,
+  onCloudPlusToggle,
   variant = "header",
 }: SettingsDialogProps) {
   const [showDogGallery, setShowDogGallery] = useState(false);
@@ -256,6 +260,30 @@ export function SettingsDialog({
               checked={webSearchEnabled}
               onCheckedChange={onWebSearchToggle}
             />
+          </div>
+
+          {/* Cloud+ Toggle */}
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Label htmlFor="cloudplus" className="font-medium">Cloud+</Label>
+              </div>
+              <Switch
+                id="cloudplus"
+                checked={cloudPlusEnabled}
+                onCheckedChange={onCloudPlusToggle}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground/80">Cloud+ includes:</p>
+              <ul className="list-disc list-inside space-y-0.5 pl-1">
+                <li>Google Image Search</li>
+                <li>AI Image Generation</li>
+                <li>Cloud Labs (Custom Knowledge)</li>
+                <li>Cloud Colab (Group Chat)</li>
+              </ul>
+            </div>
           </div>
 
           {showDogGallery && (

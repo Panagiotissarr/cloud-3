@@ -23,6 +23,8 @@ interface ChatSidebarProps {
   onWebSearchToggle: () => void;
   temperatureUnit: TemperatureUnit;
   onTemperatureUnitChange: (unit: TemperatureUnit) => void;
+  cloudPlusEnabled: boolean;
+  onCloudPlusToggle: () => void;
   onNewChat: () => void;
   currentChatId: string | null;
   chats: Chat[];
@@ -38,6 +40,8 @@ export function ChatSidebar({
   onWebSearchToggle,
   temperatureUnit,
   onTemperatureUnitChange,
+  cloudPlusEnabled,
+  onCloudPlusToggle,
   onNewChat,
   currentChatId,
   chats,
@@ -125,48 +129,52 @@ export function ChatSidebar({
             <span className="font-medium">New Chat</span>
           </button>
 
-          <button
-            onClick={() => setShowLabsModal(true)}
-            disabled={!user}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
-              user 
-                ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
-            )}
-          >
-            <FlaskConical className="h-5 w-5" />
-            <span className="font-medium">Cloud Labs</span>
-          </button>
+          {cloudPlusEnabled && (
+            <>
+              <button
+                onClick={() => setShowLabsModal(true)}
+                disabled={!user}
+                className={cn(
+                  "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
+                  user 
+                    ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                    : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+                )}
+              >
+                <FlaskConical className="h-5 w-5" />
+                <span className="font-medium">Cloud Labs</span>
+              </button>
 
-          <button
-            onClick={() => setShowColabModal(true)}
-            disabled={!user}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
-              user 
-                ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
-            )}
-          >
-            <Users className="h-5 w-5" />
-            <span className="font-medium">Cloud Colab</span>
-          </button>
+              <button
+                onClick={() => setShowColabModal(true)}
+                disabled={!user}
+                className={cn(
+                  "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
+                  user 
+                    ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                    : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+                )}
+              >
+                <Users className="h-5 w-5" />
+                <span className="font-medium">Cloud Colab</span>
+              </button>
 
-          <button
-            onClick={() => setShowGalleryModal(true)}
-            disabled={!user}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
-              user 
-                ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
-            )}
-          >
-            <Image className="h-5 w-5" />
-            <span className="font-medium">Image Gallery</span>
-            <span className="ml-auto text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Soon</span>
-          </button>
+              <button
+                onClick={() => setShowGalleryModal(true)}
+                disabled={!user}
+                className={cn(
+                  "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
+                  user 
+                    ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                    : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+                )}
+              >
+                <Image className="h-5 w-5" />
+                <span className="font-medium">Image Gallery</span>
+                <span className="ml-auto text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Soon</span>
+              </button>
+            </>
+          )}
 
           {isAdmin && (
             <button
@@ -246,6 +254,8 @@ export function ChatSidebar({
             onWebSearchToggle={onWebSearchToggle}
             temperatureUnit={temperatureUnit}
             onTemperatureUnitChange={onTemperatureUnitChange}
+            cloudPlusEnabled={cloudPlusEnabled}
+            onCloudPlusToggle={onCloudPlusToggle}
             variant="sidebar"
           />
           
