@@ -34,6 +34,86 @@ function detectImageRequest(messages: any[]): string | null {
   return null;
 }
 
+// Detect if user is asking for AI-generated images
+function detectAIImageRequest(messages: any[]): string | null {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== "user") return null;
+  
+  const content = typeof lastMessage.content === "string" 
+    ? lastMessage.content 
+    : lastMessage.content?.find((c: any) => c.type === "text")?.text || "";
+  
+  const lowerContent = content.toLowerCase();
+  
+  // Patterns for AI image generation: "generate an image of", "create an image of", "make me an image"
+  const patterns = [
+    /(?:generate\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|art|artwork|illustration)\s+(?:of|for|showing|with)\s+)(.+)/i,
+    /(?:create\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|art|artwork|illustration)\s+(?:of|for|showing|with)\s+)(.+)/i,
+    /(?:make\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|art|artwork|illustration)\s+(?:of|for|showing|with)\s+)(.+)/i,
+    /(?:draw\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|art|artwork|illustration)\s+(?:of|for|showing|with)\s+)(.+)/i,
+    /(?:design\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|art|artwork|illustration)\s+(?:of|for|showing|with)\s+)(.+)/i,
+    /(?:generate\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|art|artwork|illustration))$/i,
+    /(?:create\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|art|artwork|illustration))$/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = lowerContent.match(pattern);
+    if (match) {
+      // If there's a capture group, use it; otherwise use the full content as prompt
+      return match[1]?.trim() || content;
+    }
+  }
+  
+  return null;
+}
+
+// Generate image using Lovable AI
+async function generateAIImage(prompt: string, apiKey: string): Promise<string | null> {
+  try {
+    console.log("Generating AI image for:", prompt);
+    
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: `Generate a high-quality, detailed image: ${prompt}`
+          }
+        ],
+        modalities: ["image", "text"]
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("AI image generation failed:", response.status, await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    console.log("AI image response received");
+    
+    // Extract the base64 image from the response
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    
+    if (imageUrl) {
+      console.log("Successfully generated AI image");
+      return imageUrl;
+    }
+    
+    console.log("No image in response");
+    return null;
+  } catch (error) {
+    console.error("AI image generation error:", error);
+    return null;
+  }
+}
+
 // Search for images using Google Custom Search API simulation via web search
 async function searchImages(query: string, apiKey: string): Promise<string[]> {
   try {
@@ -108,8 +188,18 @@ serve(async (req) => {
 
     console.log("Sending request to Lovable AI with", messages.length, "messages, web search:", webSearchEnabled, "is creator:", isCreator, "has lab context:", !!labContext, "cloud+:", cloudPlusEnabled);
 
+    // Check if this is an AI image generation request (only if Cloud+ is enabled)
+    const aiImagePrompt = cloudPlusEnabled !== false ? detectAIImageRequest(messages) : null;
+    let aiGeneratedImage: string | null = null;
+    
+    if (aiImagePrompt) {
+      console.log("Detected AI image generation request for:", aiImagePrompt);
+      aiGeneratedImage = await generateAIImage(aiImagePrompt, LOVABLE_API_KEY);
+      console.log("AI image generated:", !!aiGeneratedImage);
+    }
+
     // Check if this is an image search request (only if Cloud+ is enabled)
-    const imageQuery = cloudPlusEnabled !== false ? detectImageRequest(messages) : null;
+    const imageQuery = cloudPlusEnabled !== false && !aiImagePrompt ? detectImageRequest(messages) : null;
     let imageUrls: string[] = [];
     
     if (imageQuery) {
@@ -138,6 +228,15 @@ serve(async (req) => {
       ? " When displaying temperatures, use Fahrenheit (°F)."
       : " When displaying temperatures, use Celsius (°C).";
 
+    // AI Generated image context
+    let aiImageContext = "";
+    if (aiGeneratedImage) {
+      aiImageContext = `\n\nIMPORTANT: You have SUCCESSFULLY generated an AI image for the user's request. Start your response with this EXACT block (on its own line, no extra text before it):
+[AI_GENERATED_IMAGE]${aiGeneratedImage}[/AI_GENERATED_IMAGE]
+
+Then provide a brief, enthusiastic description about the image you created. Mention specific details about the artwork.`;
+    }
+
     // Image context
     let imageContext = "";
     if (imageUrls.length > 0) {
@@ -153,7 +252,7 @@ Then provide a brief, friendly description about what you found.`;
       labContextPrompt = `\n\nIMPORTANT - You have access to the following knowledge base provided by the user. Use this information to answer their questions when relevant:\n\n${labContext}`;
     }
 
-    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}${imageContext}${labContextPrompt}
+    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}${aiImageContext}${imageContext}${labContextPrompt}
 
 IMPORTANT: When the user asks about the weather for any location, you MUST respond with a special format. First give a brief natural response, then include a weather data block in this exact format:
 [WEATHER_DATA]{"location":"City, Country","temperature":20,"condition":"Partly cloudy","humidity":65,"windSpeed":15,"icon":"2"}[/WEATHER_DATA]

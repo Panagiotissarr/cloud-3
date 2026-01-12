@@ -76,6 +76,16 @@ const parseImagesFromText = (text: string): { cleanText: string; images: string[
   }
 };
 
+// Parse AI-generated image from message content
+const parseAIImageFromText = (text: string): { cleanText: string; aiImage: string | null } => {
+  const imageMatch = text.match(/\[AI_GENERATED_IMAGE\]([\s\S]*?)\[\/AI_GENERATED_IMAGE\]/);
+  if (!imageMatch) return { cleanText: text, aiImage: null };
+  
+  const aiImage = imageMatch[1].trim();
+  const cleanText = text.replace(/\[AI_GENERATED_IMAGE\][\s\S]*?\[\/AI_GENERATED_IMAGE\]/, '').trim();
+  return { cleanText, aiImage: aiImage || null };
+};
+
 // Generate chat title from first message
 const generateChatTitle = (message: Message): string => {
   const content = typeof message.content === "string" 
@@ -524,24 +534,44 @@ export function CloudChat() {
                   >
                     {typeof message.content === "string" ? (
                       (() => {
-                        const { cleanText: textWithoutImages, images } = parseImagesFromText(message.content);
+                        const { cleanText: textWithoutAIImage, aiImage } = parseAIImageFromText(message.content);
+                        const { cleanText: textWithoutImages, images } = parseImagesFromText(textWithoutAIImage);
                         const { cleanText, weather } = parseWeatherFromText(textWithoutImages);
                         return (
                           <div className="space-y-3">
-                            {cloudPlusEnabled && (images.length > 0 || message.role === "assistant") && (
+                            {cloudPlusEnabled && (images.length > 0 || aiImage || message.role === "assistant") && (
                               <div className="space-y-2 mb-3">
-                                {/* AI Generated Images - Coming Soon */}
-                                <Collapsible>
+                                {/* AI Generated Images */}
+                                <Collapsible defaultOpen={!!aiImage}>
                                   <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
                                     <ChevronDown className="h-3 w-3 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
                                     <Sparkles className="h-3 w-3" />
                                     <span>AI Generated Images</span>
-                                    <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded">Coming Soon</span>
+                                    {aiImage && <span className="ml-auto text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded">1 image</span>}
                                   </CollapsibleTrigger>
                                   <CollapsibleContent className="pt-2">
-                                    <div className="flex items-center justify-center h-20 bg-muted/50 rounded-lg border border-dashed border-muted-foreground/30">
-                                      <p className="text-xs text-muted-foreground">AI image generation coming soon</p>
-                                    </div>
+                                    {aiImage ? (
+                                      <div className="relative overflow-hidden rounded-lg">
+                                        <img
+                                          src={aiImage}
+                                          alt="AI Generated"
+                                          className="w-full max-h-80 object-contain bg-muted rounded-lg"
+                                        />
+                                        <a
+                                          href={aiImage}
+                                          download="ai-generated-image.png"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="absolute bottom-2 right-2 bg-background/80 hover:bg-background text-foreground text-xs px-2 py-1 rounded transition-colors"
+                                        >
+                                          Download
+                                        </a>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center justify-center h-20 bg-muted/50 rounded-lg border border-dashed border-muted-foreground/30">
+                                        <p className="text-xs text-muted-foreground">Try "Generate an image of..."</p>
+                                      </div>
+                                    )}
                                   </CollapsibleContent>
                                 </Collapsible>
 
