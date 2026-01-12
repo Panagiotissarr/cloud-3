@@ -230,9 +230,10 @@ serve(async (req) => {
 
     // AI Generated image context
     let aiImageContext = "";
-    if (aiGeneratedImage) {
-      aiImageContext = `\n\nIMPORTANT: You have SUCCESSFULLY generated an AI image for the user's request. Start your response with this EXACT block (on its own line, no extra text before it):
+    if (aiGeneratedImage && aiImagePrompt) {
+      aiImageContext = `\n\nIMPORTANT: You have SUCCESSFULLY generated an AI image for the user's request. Start your response with these EXACT blocks (on their own lines, no extra text before them):
 [AI_GENERATED_IMAGE]${aiGeneratedImage}[/AI_GENERATED_IMAGE]
+[AI_IMAGE_PROMPT]${aiImagePrompt}[/AI_IMAGE_PROMPT]
 
 Then provide a brief, enthusiastic description about the image you created. Mention specific details about the artwork.`;
     }

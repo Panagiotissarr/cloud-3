@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Cloud, Send, Image, X, Mic, PhoneOff, ChevronDown, Sparkles, Globe } from "lucide-react";
+import { Cloud, Send, Image, X, Mic, PhoneOff, ChevronDown, Sparkles, Globe, Save, Loader2 } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useChats, Message, MessageContent } from "@/hooks/useChats";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { useLabs } from "@/hooks/useLabs";
+import { useAIGallery } from "@/hooks/useAIGallery";
 import { GenderPronouns, TemperatureUnit } from "./SettingsDialog";
 
 const USER_NAME_KEY = "cloud-user-name";
@@ -77,13 +78,17 @@ const parseImagesFromText = (text: string): { cleanText: string; images: string[
 };
 
 // Parse AI-generated image from message content
-const parseAIImageFromText = (text: string): { cleanText: string; aiImage: string | null } => {
+const parseAIImageFromText = (text: string): { cleanText: string; aiImage: string | null; aiPrompt: string | null } => {
   const imageMatch = text.match(/\[AI_GENERATED_IMAGE\]([\s\S]*?)\[\/AI_GENERATED_IMAGE\]/);
-  if (!imageMatch) return { cleanText: text, aiImage: null };
+  const promptMatch = text.match(/\[AI_IMAGE_PROMPT\]([\s\S]*?)\[\/AI_IMAGE_PROMPT\]/);
+  
+  if (!imageMatch) return { cleanText: text, aiImage: null, aiPrompt: null };
   
   const aiImage = imageMatch[1].trim();
-  const cleanText = text.replace(/\[AI_GENERATED_IMAGE\][\s\S]*?\[\/AI_GENERATED_IMAGE\]/, '').trim();
-  return { cleanText, aiImage: aiImage || null };
+  const aiPrompt = promptMatch ? promptMatch[1].trim() : "AI Generated Image";
+  let cleanText = text.replace(/\[AI_GENERATED_IMAGE\][\s\S]*?\[\/AI_GENERATED_IMAGE\]/, '').trim();
+  cleanText = cleanText.replace(/\[AI_IMAGE_PROMPT\][\s\S]*?\[\/AI_IMAGE_PROMPT\]/, '').trim();
+  return { cleanText, aiImage: aiImage || null, aiPrompt };
 };
 
 // Generate chat title from first message
@@ -122,6 +127,8 @@ export function CloudChat() {
     stopConversation,
   } = useVoiceChat();
 
+  const { saveImage: saveToGallery } = useAIGallery();
+  const [savingImageId, setSavingImageId] = useState<string | null>(null);
   const [isVoiceInterfaceOpen, setIsVoiceInterfaceOpen] = useState(false);
 
   const [input, setInput] = useState("");
@@ -534,9 +541,18 @@ export function CloudChat() {
                   >
                     {typeof message.content === "string" ? (
                       (() => {
-                        const { cleanText: textWithoutAIImage, aiImage } = parseAIImageFromText(message.content);
+                        const { cleanText: textWithoutAIImage, aiImage, aiPrompt } = parseAIImageFromText(message.content);
                         const { cleanText: textWithoutImages, images } = parseImagesFromText(textWithoutAIImage);
                         const { cleanText, weather } = parseWeatherFromText(textWithoutImages);
+                        const imageId = `${index}-ai`;
+                        
+                        const handleSaveImage = async () => {
+                          if (!aiImage || !aiPrompt) return;
+                          setSavingImageId(imageId);
+                          await saveToGallery(aiPrompt, aiImage);
+                          setSavingImageId(null);
+                        };
+                        
                         return (
                           <div className="space-y-3">
                             {cloudPlusEnabled && (images.length > 0 || aiImage || message.role === "assistant") && (
@@ -557,15 +573,31 @@ export function CloudChat() {
                                           alt="AI Generated"
                                           className="w-full max-h-80 object-contain bg-muted rounded-lg"
                                         />
-                                        <a
-                                          href={aiImage}
-                                          download="ai-generated-image.png"
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="absolute bottom-2 right-2 bg-background/80 hover:bg-background text-foreground text-xs px-2 py-1 rounded transition-colors"
-                                        >
-                                          Download
-                                        </a>
+                                        <div className="absolute bottom-2 right-2 flex gap-1">
+                                          {user && (
+                                            <button
+                                              onClick={handleSaveImage}
+                                              disabled={savingImageId === imageId}
+                                              className="bg-primary hover:opacity-90 text-primary-foreground text-xs px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                            >
+                                              {savingImageId === imageId ? (
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                              ) : (
+                                                <Save className="h-3 w-3" />
+                                              )}
+                                              Save
+                                            </button>
+                                          )}
+                                          <a
+                                            href={aiImage}
+                                            download="ai-generated-image.png"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="bg-background/80 hover:bg-background text-foreground text-xs px-2 py-1 rounded transition-colors"
+                                          >
+                                            Download
+                                          </a>
+                                        </div>
                                       </div>
                                     ) : (
                                       <div className="flex items-center justify-center h-20 bg-muted/50 rounded-lg border border-dashed border-muted-foreground/30">
