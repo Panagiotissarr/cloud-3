@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Plus, Image, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X, FlaskConical, Users } from "lucide-react";
+import { Menu, Plus, Sparkles, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X, FlaskConical, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog, GenderPronouns, TemperatureUnit } from "./SettingsDialog";
 import { LabsManager } from "./LabsManager";
 import { ColabManager } from "./ColabManager";
+import { AIGallery } from "./AIGallery";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -169,9 +170,8 @@ export function ChatSidebar({
                     : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
                 )}
               >
-                <Image className="h-5 w-5" />
-                <span className="font-medium">Image Gallery</span>
-                <span className="ml-auto text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Soon</span>
+                <Sparkles className="h-5 w-5" />
+                <span className="font-medium">AI Gallery</span>
               </button>
             </>
           )}
@@ -293,27 +293,17 @@ export function ChatSidebar({
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Coming Soon Modal for Gallery */}
+      {/* AI Gallery Modal */}
       {showGalleryModal && (
         <div 
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-center justify-center animate-fade-in"
           onClick={() => setShowGalleryModal(false)}
         >
           <div 
-            className="bg-secondary rounded-2xl p-8 text-center max-w-sm mx-4 animate-scale-in"
+            className="bg-secondary rounded-2xl max-w-4xl w-full mx-4 animate-scale-in overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-5xl mb-4">🖼️</div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Coming Soon</h3>
-            <p className="text-muted-foreground">
-              The image gallery feature is currently under development. Stay tuned!
-            </p>
-            <button
-              onClick={() => setShowGalleryModal(false)}
-              className="mt-6 px-6 py-2 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-            >
-              Got it
-            </button>
+            <AIGallery onClose={() => setShowGalleryModal(false)} />
           </div>
         </div>
       )}
