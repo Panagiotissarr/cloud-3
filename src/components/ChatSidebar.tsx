@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Plus, Sparkles, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X, FlaskConical, Users } from "lucide-react";
+import { Menu, Plus, Sparkles, MessageSquare, ChevronRight, LogIn, LogOut, Shield, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog, GenderPronouns, TemperatureUnit } from "./SettingsDialog";
 import { LabsManager } from "./LabsManager";
 import { ColabManager } from "./ColabManager";
 import { AIGallery } from "./AIGallery";
+import { CloudPlusMenu } from "./CloudPlusMenu";
+import { CLIChat } from "./CLIChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,6 +55,8 @@ export function ChatSidebar({
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [showLabsModal, setShowLabsModal] = useState(false);
   const [showColabModal, setShowColabModal] = useState(false);
+  const [showCloudPlusMenu, setShowCloudPlusMenu] = useState(false);
+  const [showCLIChat, setShowCLIChat] = useState(false);
 
   const { user, isAdmin, signOut, profile } = useAuth();
   const navigate = useNavigate();
@@ -131,49 +135,17 @@ export function ChatSidebar({
           </button>
 
           {cloudPlusEnabled && (
-            <>
-              <button
-                onClick={() => setShowLabsModal(true)}
-                disabled={!user}
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
-                  user 
-                    ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                    : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
-                )}
-              >
-                <FlaskConical className="h-5 w-5" />
-                <span className="font-medium">Cloud Labs</span>
-              </button>
-
-              <button
-                onClick={() => setShowColabModal(true)}
-                disabled={!user}
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
-                  user 
-                    ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                    : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
-                )}
-              >
-                <Users className="h-5 w-5" />
-                <span className="font-medium">Cloud Colab</span>
-              </button>
-
-              <button
-                onClick={() => setShowGalleryModal(true)}
-                disabled={!user}
-                className={cn(
-                  "w-full flex items-center gap-3 rounded-lg px-4 py-3 transition-colors",
-                  user 
-                    ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                    : "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
-                )}
-              >
-                <Sparkles className="h-5 w-5" />
-                <span className="font-medium">AI Gallery</span>
-              </button>
-            </>
+            <button
+              onClick={() => {
+                setShowCloudPlusMenu(true);
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-3 rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 text-foreground px-4 py-3 hover:from-primary/30 hover:to-accent/30 transition-all"
+            >
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="font-medium">Cloud+</span>
+              <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+            </button>
           )}
 
           {isAdmin && (
@@ -340,6 +312,38 @@ export function ChatSidebar({
             />
           </div>
         </div>
+      )}
+
+      {/* Cloud+ Menu */}
+      {showCloudPlusMenu && (
+        <CloudPlusMenu
+          onClose={() => setShowCloudPlusMenu(false)}
+          onOpenLabs={() => {
+            setShowCloudPlusMenu(false);
+            setShowLabsModal(true);
+          }}
+          onOpenColab={() => {
+            setShowCloudPlusMenu(false);
+            setShowColabModal(true);
+          }}
+          onOpenGallery={() => {
+            setShowCloudPlusMenu(false);
+            setShowGalleryModal(true);
+          }}
+          onOpenCLI={() => {
+            setShowCloudPlusMenu(false);
+            setShowCLIChat(true);
+          }}
+        />
+      )}
+
+      {/* CLI Chat */}
+      {showCLIChat && (
+        <CLIChat
+          onClose={() => setShowCLIChat(false)}
+          webSearchEnabled={webSearchEnabled}
+          temperatureUnit={temperatureUnit}
+        />
       )}
     </>
   );
