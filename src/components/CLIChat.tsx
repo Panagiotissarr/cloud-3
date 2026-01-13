@@ -122,13 +122,25 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
     if (trimmedCommand === "help") {
       setLines(prev => [...prev, 
         { type: "system", content: "" },
-        { type: "system", content: "Available commands:" },
-        { type: "system", content: "  help    - Show this help message" },
-        { type: "system", content: "  clear   - Clear the terminal" },
-        { type: "system", content: "  exit    - Close the CLI" },
-        { type: "system", content: "  about   - About Cloud AI" },
+        { type: "system", content: "╔══════════════════════════════════════════════════════╗" },
+        { type: "system", content: "║                  AVAILABLE COMMANDS                  ║" },
+        { type: "system", content: "╠══════════════════════════════════════════════════════╣" },
+        { type: "system", content: "║  help    │ Display this help message with all        ║" },
+        { type: "system", content: "║          │ available commands and their descriptions ║" },
+        { type: "system", content: "╠──────────┼───────────────────────────────────────────╣" },
+        { type: "system", content: "║  clear   │ Clear the terminal screen and reset       ║" },
+        { type: "system", content: "║          │ the display to a clean state              ║" },
+        { type: "system", content: "╠──────────┼───────────────────────────────────────────╣" },
+        { type: "system", content: "║  exit    │ Close the CLI interface and return        ║" },
+        { type: "system", content: "║          │ to the main Cloud chat                    ║" },
+        { type: "system", content: "╠──────────┼───────────────────────────────────────────╣" },
+        { type: "system", content: "║  about   │ Display information about Cloud AI        ║" },
+        { type: "system", content: "║          │ including version and creator details     ║" },
+        { type: "system", content: "╠──────────┼───────────────────────────────────────────╣" },
+        { type: "system", content: "║  ver     │ Display copyright and version info        ║" },
+        { type: "system", content: "╚══════════════════════════════════════════════════════╝" },
         { type: "system", content: "" },
-        { type: "system", content: "Or just type any message to chat with Cloud!" },
+        { type: "system", content: "💡 Or just type any message to chat with Cloud!" },
         { type: "system", content: "" },
       ]);
       return;
@@ -154,6 +166,39 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
         { type: "system", content: "║  Creator: Panagiotis (Sarr)          ║" },
         { type: "system", content: "║  Model: google/gemini-2.5-flash      ║" },
         { type: "system", content: "╚══════════════════════════════════════╝" },
+        { type: "system", content: "" },
+      ]);
+      return;
+    }
+
+    if (trimmedCommand === "ver") {
+      setLines(prev => [...prev,
+        { type: "system", content: "" },
+        { type: "system", content: "═══════════════════════════════════════════════════════" },
+        { type: "system", content: "" },
+        { type: "system", content: "  Cloud CLI v1.0.0" },
+        { type: "system", content: "" },
+        { type: "system", content: "  © 2024-2026 Cloud AI. All rights reserved." },
+        { type: "system", content: "" },
+        { type: "system", content: "  This software and its associated documentation" },
+        { type: "system", content: "  are protected by copyright law and international" },
+        { type: "system", content: "  treaties. Unauthorized reproduction or distribution" },
+        { type: "system", content: "  of this program, or any portion of it, may result" },
+        { type: "system", content: "  in severe civil and criminal penalties." },
+        { type: "system", content: "" },
+        { type: "system", content: "  Created with ❤️ by Panagiotis (Sarr)" },
+        { type: "system", content: "" },
+        { type: "system", content: "═══════════════════════════════════════════════════════" },
+        { type: "system", content: "" },
+      ]);
+      return;
+    }
+
+    // Hidden easter egg command
+    if (trimmedCommand === "sarris") {
+      setLines(prev => [...prev,
+        { type: "system", content: "" },
+        { type: "assistant", content: "🔮 You found my secret... sneaky 👀" },
         { type: "system", content: "" },
       ]);
       return;
