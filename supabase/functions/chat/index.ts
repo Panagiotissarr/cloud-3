@@ -196,6 +196,26 @@ serve(async (req) => {
       console.log("Detected AI image generation request for:", aiImagePrompt);
       aiGeneratedImage = await generateAIImage(aiImagePrompt, LOVABLE_API_KEY);
       console.log("AI image generated:", !!aiGeneratedImage);
+      
+      // If we successfully generated an image, return it directly without streaming
+      if (aiGeneratedImage) {
+        const imageResponse = `[AI_GENERATED_IMAGE]${aiGeneratedImage}[/AI_GENERATED_IMAGE]
+[AI_IMAGE_PROMPT]${aiImagePrompt}[/AI_IMAGE_PROMPT]
+
+I've created this image for you! 🎨 Here's a unique AI-generated artwork based on your description: "${aiImagePrompt}". I hope you love it!`;
+        
+        // Format as SSE stream for consistency with the frontend
+        const sseResponse = `data: ${JSON.stringify({
+          choices: [{ delta: { content: imageResponse } }]
+        })}\n\ndata: [DONE]\n\n`;
+        
+        console.log("Returning AI generated image response");
+        return new Response(sseResponse, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      } else {
+        console.log("AI image generation failed, falling back to text response");
+      }
     }
 
     // Check if this is an image search request (only if Cloud+ is enabled)
@@ -228,16 +248,6 @@ serve(async (req) => {
       ? " When displaying temperatures, use Fahrenheit (°F)."
       : " When displaying temperatures, use Celsius (°C).";
 
-    // AI Generated image context
-    let aiImageContext = "";
-    if (aiGeneratedImage && aiImagePrompt) {
-      aiImageContext = `\n\nIMPORTANT: You have SUCCESSFULLY generated an AI image for the user's request. Start your response with these EXACT blocks (on their own lines, no extra text before them):
-[AI_GENERATED_IMAGE]${aiGeneratedImage}[/AI_GENERATED_IMAGE]
-[AI_IMAGE_PROMPT]${aiImagePrompt}[/AI_IMAGE_PROMPT]
-
-Then provide a brief, enthusiastic description about the image you created. Mention specific details about the artwork.`;
-    }
-
     // Image context
     let imageContext = "";
     if (imageUrls.length > 0) {
@@ -253,7 +263,7 @@ Then provide a brief, friendly description about what you found.`;
       labContextPrompt = `\n\nIMPORTANT - You have access to the following knowledge base provided by the user. Use this information to answer their questions when relevant:\n\n${labContext}`;
     }
 
-    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}${aiImageContext}${imageContext}${labContextPrompt}
+    const basePrompt = `You are Cloud, a helpful and friendly AI assistant created by Panagiotis (also known as Sarr). When anyone asks who made you, who created you, or who your creator is, always respond that you were made by Panagiotis (Sarr).${userContext}${creatorContext}${tempContext}${imageContext}${labContextPrompt}
 
 IMPORTANT: When the user asks about the weather for any location, you MUST respond with a special format. First give a brief natural response, then include a weather data block in this exact format:
 [WEATHER_DATA]{"location":"City, Country","temperature":20,"condition":"Partly cloudy","humidity":65,"windSpeed":15,"icon":"2"}[/WEATHER_DATA]
