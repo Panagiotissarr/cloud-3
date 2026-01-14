@@ -60,10 +60,6 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
   const inputRef = useRef<HTMLInputElement>(null);
 
   const bootSequence = [
-    "Cloud CLI v1.0.0",
-    "Initializing neural networks...",
-    "Loading language models...",
-    "Connecting to Cloud servers...",
     "═══════════════════════════════════════════════════════",
     "",
     "  ██████╗██╗      ██████╗ ██╗   ██╗██████╗ ",
@@ -76,14 +72,8 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
     "═══════════════════════════════════════════════════════",
     "",
     "© 2024-2026 Cloud AI. All rights reserved.",
-    "Created by Panagiotis (Sarr)",
     "",
-    "Type your message and press Enter to chat.",
-    "Type 'help' for available commands.",
-    "Type 'clear' to clear the terminal.",
-    "Type 'exit' to close the CLI.",
-    "",
-    "Ready for input...",
+    "Type 'help' for commands or just start chatting.",
     ""
   ];
 
@@ -211,20 +201,27 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
     setLines(prev => [...prev, { type: "system", content: "Processing..." }]);
 
     try {
-      const response = await supabase.functions.invoke("chat", {
-        body: {
-          messages: [{ role: "user", content: command }],
-          webSearchEnabled,
-          temperatureUnit,
-          isCreator: profile?.is_creator || false,
-          cloudPlusEnabled: true,
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: command }],
+            webSearchEnabled,
+            temperatureUnit,
+            isCreator: profile?.is_creator || false,
+            cloudPlusEnabled: true,
+          }),
+        }
+      );
 
-      if (response.error) throw response.error;
+      if (!response.ok) throw new Error("Failed to get response");
 
-      // Handle streaming response
-      const reader = response.data.getReader?.();
+      const reader = response.body?.getReader();
       if (reader) {
         const decoder = new TextDecoder();
         let fullResponse = "";
@@ -366,8 +363,8 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
 
       {/* Status bar */}
       <div className="px-4 py-1 bg-card/20 border-t border-border/30 text-xs text-muted-foreground flex justify-between">
-        <span>Cloud CLI v1.0.0</span>
-        <span>{user ? `Logged in as ${profile?.username || user.email}` : "Guest mode"}</span>
+        <span>Cloud CLI</span>
+        <span>{user ? `${profile?.username || user.email}` : "Guest"}</span>
       </div>
     </div>
   );
