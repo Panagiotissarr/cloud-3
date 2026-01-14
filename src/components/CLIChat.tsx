@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useChats, Chat } from "@/hooks/useChats";
 
 interface CLIChatProps {
   onClose: () => void;
@@ -17,12 +18,25 @@ interface TerminalLine {
 
 export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatProps) {
   const { user, profile } = useAuth();
+  const {
+    chats,
+    currentChatId,
+    messages,
+    createChat,
+    addMessage,
+    updateLastMessage,
+    saveAssistantMessage,
+    selectChat,
+    newChat,
+  } = useChats();
+
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [sessionStartTime] = useState(Date.now());
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +80,11 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
     }
   }, [lines]);
 
+  // Helper to get chat filename from title
+  const getChatFilename = (chat: Chat) => {
+    return chat.title.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 30) + ".chat";
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowUp") {
       e.preventDefault();
@@ -88,9 +107,10 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
   };
 
   const handleCommand = async (command: string) => {
-    const trimmedCommand = command.trim().toLowerCase();
+    const trimmedCommand = command.trim();
+    const lowerCommand = trimmedCommand.toLowerCase();
     const args = trimmedCommand.split(" ");
-    const cmd = args[0];
+    const cmd = args[0].toLowerCase();
     
     // Add to history
     if (command.trim()) {
@@ -112,28 +132,33 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
         { type: "system", content: "╔════════════════════════════════════════════════════════════╗" },
         { type: "system", content: "║                    AVAILABLE COMMANDS                      ║" },
         { type: "system", content: "╠════════════════════════════════════════════════════════════╣" },
+        { type: "system", content: "║  FILE MANAGEMENT                                           ║" },
+        { type: "system", content: "║  touch [name]  Create a new chat file                      ║" },
+        { type: "system", content: "║  ls            List all chat files                         ║" },
+        { type: "system", content: "║  cat [file]    Display chat file contents                  ║" },
+        { type: "system", content: "║  open [file]   Open a chat file                            ║" },
+        { type: "system", content: "║  rm [file]     Delete a chat file (coming soon)            ║" },
+        { type: "system", content: "║  pwd           Print working directory                     ║" },
+        { type: "system", content: "╠════════════════════════════════════════════════════════════╣" },
         { type: "system", content: "║  GENERAL                                                   ║" },
-        { type: "system", content: "║  help        Display this help message                     ║" },
-        { type: "system", content: "║  clear       Clear the terminal screen                     ║" },
-        { type: "system", content: "║  exit        Close the CLI and return to Cloud             ║" },
-        { type: "system", content: "║  about       Display Cloud AI information                  ║" },
-        { type: "system", content: "║  ver         Display copyright and version                 ║" },
+        { type: "system", content: "║  help          Display this help message                   ║" },
+        { type: "system", content: "║  clear         Clear the terminal screen                   ║" },
+        { type: "system", content: "║  exit          Close the CLI and return to Cloud           ║" },
+        { type: "system", content: "║  about         Display Cloud AI information                ║" },
+        { type: "system", content: "║  ver           Display copyright and version               ║" },
         { type: "system", content: "╠════════════════════════════════════════════════════════════╣" },
         { type: "system", content: "║  SYSTEM                                                    ║" },
-        { type: "system", content: "║  whoami      Display current user info                     ║" },
-        { type: "system", content: "║  date        Display current date and time                 ║" },
-        { type: "system", content: "║  uptime      Show session uptime                           ║" },
-        { type: "system", content: "║  uname       Display system information                    ║" },
-        { type: "system", content: "║  hostname    Display hostname                              ║" },
+        { type: "system", content: "║  whoami        Display current user info                   ║" },
+        { type: "system", content: "║  date          Display current date and time               ║" },
+        { type: "system", content: "║  uptime        Show session uptime                         ║" },
+        { type: "system", content: "║  uname         Display system information                  ║" },
+        { type: "system", content: "║  hostname      Display hostname                            ║" },
         { type: "system", content: "╠════════════════════════════════════════════════════════════╣" },
         { type: "system", content: "║  UTILITIES                                                 ║" },
-        { type: "system", content: "║  echo [msg]  Print a message to the terminal               ║" },
-        { type: "system", content: "║  history     Show command history                          ║" },
-        { type: "system", content: "║  pwd         Print working directory                       ║" },
-        { type: "system", content: "║  ls          List directory contents                       ║" },
-        { type: "system", content: "║  cat [file]  Display file contents                         ║" },
-        { type: "system", content: "║  fortune     Display a random fortune                      ║" },
-        { type: "system", content: "║  cowsay [m]  Have a cow say something                      ║" },
+        { type: "system", content: "║  echo [msg]    Print a message to the terminal             ║" },
+        { type: "system", content: "║  history       Show command history                        ║" },
+        { type: "system", content: "║  fortune       Display a random fortune                    ║" },
+        { type: "system", content: "║  cowsay [m]    Have a cow say something                    ║" },
         { type: "system", content: "╚════════════════════════════════════════════════════════════╝" },
         { type: "system", content: "" },
         { type: "system", content: "💡 Or just type any message to chat with Cloud!" },
@@ -153,6 +178,131 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
       return;
     }
 
+    // touch - create new chat
+    if (cmd === "touch") {
+      const chatName = args.slice(1).join(" ").replace(/\.chat$/, "");
+      if (!chatName) {
+        setLines(prev => [...prev, { type: "error", content: "touch: missing file operand" }, { type: "system", content: "" }]);
+        return;
+      }
+      
+      // Create new chat with this name
+      newChat();
+      setLines(prev => [...prev, 
+        { type: "assistant", content: `Created: ${chatName}.chat` },
+        { type: "system", content: `Chat "${chatName}" is now active. Start typing to add messages.` },
+        { type: "system", content: "" }
+      ]);
+      return;
+    }
+
+    // ls - list chats as files
+    if (cmd === "ls") {
+      const flag = args[1];
+      if (chats.length === 0) {
+        setLines(prev => [...prev, { type: "system", content: "(no chat files)" }, { type: "system", content: "" }]);
+        return;
+      }
+      
+      if (flag === "-l" || flag === "-la") {
+        // Long listing format
+        setLines(prev => [...prev, 
+          { type: "system", content: "total " + chats.length },
+          ...chats.map(chat => {
+            const date = chat.timestamp.toLocaleDateString();
+            const time = chat.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const filename = getChatFilename(chat);
+            const isActive = chat.id === currentChatId ? " *" : "";
+            return { type: "assistant" as const, content: `-rw-r--r--  1 ${profile?.username || 'user'}  ${chat.messages.length} msgs  ${date} ${time}  ${filename}${isActive}` };
+          }),
+          { type: "system", content: "" }
+        ]);
+      } else {
+        // Simple listing
+        const files = chats.map(chat => {
+          const filename = getChatFilename(chat);
+          return chat.id === currentChatId ? `${filename}*` : filename;
+        });
+        setLines(prev => [...prev, 
+          { type: "assistant", content: files.join("  ") },
+          { type: "system", content: "" }
+        ]);
+      }
+      return;
+    }
+
+    // open - open a chat file
+    if (cmd === "open") {
+      const filename = args.slice(1).join(" ").replace(/\.chat$/, "");
+      if (!filename) {
+        setLines(prev => [...prev, { type: "error", content: "open: missing file operand" }, { type: "system", content: "" }]);
+        return;
+      }
+      
+      // Find chat by matching filename
+      const chat = chats.find(c => {
+        const chatFilename = getChatFilename(c).replace(/\.chat$/, "");
+        return chatFilename.includes(filename.toLowerCase().replace(/[^a-z0-9]/g, "_"));
+      });
+      
+      if (!chat) {
+        setLines(prev => [...prev, { type: "error", content: `open: ${filename}.chat: No such file` }, { type: "system", content: "" }]);
+        return;
+      }
+      
+      selectChat(chat.id);
+      setLines(prev => [...prev, 
+        { type: "assistant", content: `Opened: ${getChatFilename(chat)}` },
+        { type: "system", content: "" }
+      ]);
+      return;
+    }
+
+    // cat - display chat contents
+    if (cmd === "cat") {
+      const filename = args.slice(1).join(" ").replace(/\.chat$/, "");
+      if (!filename) {
+        setLines(prev => [...prev, { type: "error", content: "cat: missing file operand" }, { type: "system", content: "" }]);
+        return;
+      }
+      
+      if (filename === ".config") {
+        setLines(prev => [...prev, 
+          { type: "assistant", content: `# Cloud CLI Configuration\nuser=${profile?.username || "guest"}\nmodel=gemini-2.5-flash\nweb_search=${webSearchEnabled}\ntemp_unit=${temperatureUnit}` },
+          { type: "system", content: "" }
+        ]);
+        return;
+      }
+      
+      // Find chat by matching filename
+      const chat = chats.find(c => {
+        const chatFilename = getChatFilename(c).replace(/\.chat$/, "");
+        return chatFilename.includes(filename.toLowerCase().replace(/[^a-z0-9]/g, "_"));
+      });
+      
+      if (!chat) {
+        setLines(prev => [...prev, { type: "error", content: `cat: ${filename}.chat: No such file` }, { type: "system", content: "" }]);
+        return;
+      }
+      
+      // Display chat messages
+      const chatLines: TerminalLine[] = [
+        { type: "system", content: `=== ${chat.title} ===` },
+      ];
+      
+      chat.messages.forEach(msg => {
+        const content = typeof msg.content === "string" 
+          ? msg.content 
+          : msg.content.map(c => c.type === "text" ? c.text : "[image]").join(" ");
+        const prefix = msg.role === "user" ? "USER: " : "CLOUD: ";
+        chatLines.push({ type: msg.role === "user" ? "user" : "assistant", content: prefix + content.slice(0, 200) + (content.length > 200 ? "..." : "") });
+      });
+      
+      chatLines.push({ type: "system", content: "" });
+      setLines(prev => [...prev, ...chatLines]);
+      return;
+    }
+
     if (cmd === "whoami") {
       const username = profile?.username || user?.email || "guest";
       setLines(prev => [...prev, { type: "assistant", content: username }, { type: "system", content: "" }]);
@@ -166,7 +316,7 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
     }
 
     if (cmd === "uptime") {
-      const uptime = Math.floor((Date.now() - performance.timing.navigationStart) / 1000);
+      const uptime = Math.floor((Date.now() - sessionStartTime) / 1000);
       const hours = Math.floor(uptime / 3600);
       const minutes = Math.floor((uptime % 3600) / 60);
       const seconds = uptime % 60;
@@ -199,29 +349,11 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
     }
 
     if (cmd === "pwd") {
-      setLines(prev => [...prev, { type: "assistant", content: "/home/cloud/chat" }, { type: "system", content: "" }]);
-      return;
-    }
-
-    if (cmd === "ls") {
-      setLines(prev => [...prev, 
-        { type: "assistant", content: "conversations/  labs/  images/  .config" },
-        { type: "system", content: "" }
-      ]);
-      return;
-    }
-
-    if (cmd === "cat") {
-      const file = args[1];
-      if (!file) {
-        setLines(prev => [...prev, { type: "error", content: "cat: missing file operand" }, { type: "system", content: "" }]);
-      } else if (file === ".config") {
-        setLines(prev => [...prev, 
-          { type: "assistant", content: `# Cloud CLI Configuration\nuser=${profile?.username || "guest"}\nmodel=gemini-2.5-flash\nweb_search=${webSearchEnabled}\ntemp_unit=${temperatureUnit}` },
-          { type: "system", content: "" }
-        ]);
+      const currentChat = chats.find(c => c.id === currentChatId);
+      if (currentChat) {
+        setLines(prev => [...prev, { type: "assistant", content: `/home/cloud/chats/${getChatFilename(currentChat)}` }, { type: "system", content: "" }]);
       } else {
-        setLines(prev => [...prev, { type: "error", content: `cat: ${file}: No such file or directory` }, { type: "system", content: "" }]);
+        setLines(prev => [...prev, { type: "assistant", content: "/home/cloud/chats" }, { type: "system", content: "" }]);
       }
       return;
     }
@@ -315,13 +447,36 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
       return;
     }
 
+    if (cmd === "rm") {
+      setLines(prev => [...prev, { type: "error", content: "rm: permission denied (feature coming soon)" }, { type: "system", content: "" }]);
+      return;
+    }
+
     if (!command.trim()) return;
 
-    // Send to AI
+    // Send to AI and save to current chat
     setIsTyping(true);
     setLines(prev => [...prev, { type: "system", content: "Processing..." }]);
 
     try {
+      // Create user message
+      const userMessage = { role: "user" as const, content: command };
+      
+      // If no current chat, create one with this message
+      let chatId = currentChatId;
+      if (!chatId) {
+        const title = command.slice(0, 40) + (command.length > 40 ? "..." : "");
+        chatId = await createChat(title, userMessage);
+      } else {
+        await addMessage(chatId, userMessage);
+      }
+
+      // Build messages for API including history
+      const apiMessages = [...messages, userMessage].map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
         {
@@ -331,7 +486,7 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
             "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
-            messages: [{ role: "user", content: command }],
+            messages: apiMessages,
             webSearchEnabled,
             temperatureUnit,
             isCreator: profile?.is_creator || false,
@@ -380,6 +535,11 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
           .replace(/\[WEATHER_DATA\][\s\S]*?\[\/WEATHER_DATA\]/g, "")
           .trim();
 
+        // Save assistant message to chat
+        if (chatId && fullResponse) {
+          await saveAssistantMessage(chatId, fullResponse);
+        }
+
         // Remove processing line and add response
         setLines(prev => {
           const newLines = prev.filter(l => l.content !== "Processing...");
@@ -411,56 +571,60 @@ export function CLIChat({ onClose, webSearchEnabled, temperatureUnit }: CLIChatP
   return (
     <div className="fixed inset-0 bg-black z-[80] flex flex-col animate-fade-in font-mono">
       {/* Terminal content */}
-      <div
+      <div 
         ref={terminalRef}
-        className="flex-1 overflow-y-auto p-4 text-sm leading-relaxed"
+        className="flex-1 overflow-y-auto p-4 text-green-400 text-sm leading-relaxed"
         onClick={() => inputRef.current?.focus()}
       >
-        {lines.map((line, i) => (
-          <div
-            key={i}
+        {lines.map((line, index) => (
+          <div 
+            key={index}
             className={cn(
               "whitespace-pre-wrap",
-              line.type === "user" && "text-primary",
-              line.type === "assistant" && "text-green-400",
-              line.type === "error" && "text-destructive",
-              line.type === "system" && "text-muted-foreground"
+              line.type === "user" && "text-cyan-400",
+              line.type === "assistant" && "text-green-300",
+              line.type === "error" && "text-red-400",
+              line.type === "system" && "text-green-500"
             )}
           >
             {line.content}
           </div>
         ))}
+        
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="text-yellow-400 animate-pulse">
+            ⠋ Processing...
+          </div>
+        )}
+      </div>
 
-        {/* Input line */}
-        {bootComplete && (
-          <form onSubmit={handleSubmit} className="flex items-center gap-2 mt-1">
-            <span className="text-primary">$</span>
+      {/* Input area */}
+      {bootComplete && (
+        <form onSubmit={handleSubmit} className="p-4 border-t border-green-900/30">
+          <div className="flex items-center gap-2">
+            <span className="text-green-400">$</span>
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              className="flex-1 bg-transparent text-green-400 outline-none placeholder-green-700"
+              placeholder={currentChatId ? "Type a message or command..." : "Type 'touch <name>' to create a chat..."}
               disabled={isTyping}
-              className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50"
-              placeholder={isTyping ? "Processing..." : ""}
               autoFocus
             />
             <button
               type="submit"
-              disabled={!input.trim() || isTyping}
-              className="p-1 text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
+              disabled={isTyping || !input.trim()}
+              className="text-green-400 hover:text-green-300 disabled:opacity-50"
             >
-              <Send className="h-4 w-4" />
+              <Send className="w-4 h-4" />
             </button>
-          </form>
-        )}
-
-        {/* Blinking cursor when not typing */}
-        {!bootComplete && (
-          <span className="text-primary animate-pulse">▊</span>
-        )}
-      </div>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
