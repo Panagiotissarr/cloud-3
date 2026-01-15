@@ -8,6 +8,7 @@ import { ColabManager } from "./ColabManager";
 import { AIGallery } from "./AIGallery";
 import { CloudPlusMenu } from "./CloudPlusMenu";
 import { CLIChat } from "./CLIChat";
+import { CloudChatRoom } from "./CloudChatRoom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -57,6 +58,7 @@ export function ChatSidebar({
   const [showColabModal, setShowColabModal] = useState(false);
   const [showCloudPlusMenu, setShowCloudPlusMenu] = useState(false);
   const [showCLIChat, setShowCLIChat] = useState(false);
+  const [showCloudChat, setShowCloudChat] = useState(false);
 
   const { user, isAdmin, signOut, profile } = useAuth();
   const navigate = useNavigate();
@@ -334,6 +336,10 @@ export function ChatSidebar({
             setShowCloudPlusMenu(false);
             setShowCLIChat(true);
           }}
+          onOpenCloudChat={() => {
+            setShowCloudPlusMenu(false);
+            setShowCloudChat(true);
+          }}
         />
       )}
 
@@ -344,6 +350,11 @@ export function ChatSidebar({
           webSearchEnabled={webSearchEnabled}
           temperatureUnit={temperatureUnit}
         />
+      )}
+
+      {/* Cloud Chat Room */}
+      {showCloudChat && (
+        <CloudChatRoom onClose={() => setShowCloudChat(false)} />
       )}
     </>
   );

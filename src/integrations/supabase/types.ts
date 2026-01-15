@@ -121,6 +121,68 @@ export type Database = {
           },
         ]
       }
+      cloud_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          guest_name: string | null
+          id: string
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          guest_name?: string | null
+          id?: string
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          guest_name?: string | null
+          id?: string
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cloud_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cloud_chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cloud_chat_sessions: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       colab_messages: {
         Row: {
           content: string
@@ -365,6 +427,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_chat_messages: { Args: never; Returns: undefined }
+      get_chat_session_by_code: {
+        Args: { session_code: string }
+        Returns: {
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }[]
+      }
       get_session_by_code: {
         Args: { session_code: string }
         Returns: {
