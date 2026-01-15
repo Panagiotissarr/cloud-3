@@ -128,6 +128,7 @@ export type Database = {
           guest_name: string | null
           id: string
           session_id: string
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -136,6 +137,7 @@ export type Database = {
           guest_name?: string | null
           id?: string
           session_id: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
@@ -144,6 +146,7 @@ export type Database = {
           guest_name?: string | null
           id?: string
           session_id?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [

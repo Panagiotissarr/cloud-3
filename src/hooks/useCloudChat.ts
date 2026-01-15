@@ -10,6 +10,7 @@ interface CloudChatMessage {
   guest_name: string | null;
   content: string;
   created_at: string;
+  updated_at: string | null;
 }
 
 interface CloudChatSession {
@@ -70,6 +71,34 @@ export function useCloudChat() {
         },
         (payload) => {
           setMessages((prev) => [...prev, payload.new as CloudChatMessage]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "cloud_chat_messages",
+          filter: `session_id=eq.${session.id}`,
+        },
+        (payload) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === payload.new.id ? (payload.new as CloudChatMessage) : msg
+            )
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "cloud_chat_messages",
+          filter: `session_id=eq.${session.id}`,
+        },
+        (payload) => {
+          setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
         }
       )
       .subscribe();
@@ -141,7 +170,6 @@ export function useCloudChat() {
       return false;
     }
 
-    const senderName = user ? profile?.display_name || profile?.username : guestName;
     if (!user && !guestName) {
       toast.error("Please set your name first");
       return false;
@@ -163,6 +191,51 @@ export function useCloudChat() {
     return true;
   };
 
+  // Edit a message
+  const editMessage = async (messageId: string, newContent: string) => {
+    if (!user) {
+      toast.error("You must be logged in to edit messages");
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("cloud_chat_messages")
+      .update({ content: newContent, updated_at: new Date().toISOString() })
+      .eq("id", messageId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error editing message:", error);
+      toast.error("Failed to edit message");
+      return false;
+    }
+
+    return true;
+  };
+
+  // Delete a message
+  const deleteMessage = async (messageId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to delete messages");
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("cloud_chat_messages")
+      .delete()
+      .eq("id", messageId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error deleting message:", error);
+      toast.error("Failed to delete message");
+      return false;
+    }
+
+    toast.success("Message deleted");
+    return true;
+  };
+
   // Leave the session
   const leaveSession = () => {
     setSession(null);
@@ -178,6 +251,8 @@ export function useCloudChat() {
     createSession,
     joinSession,
     sendMessage,
+    editMessage,
+    deleteMessage,
     leaveSession,
     user,
     profile,
