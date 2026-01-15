@@ -17,7 +17,7 @@ interface AuthContextType {
   isCreator: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, username: string, isCreator?: boolean, role?: "admin" | "user") => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, username: string, isCreator?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -103,8 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     username: string,
-    isCreatorAccount = false,
-    role: "admin" | "user" = "user"
+    isCreatorAccount = false
   ) => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -115,7 +114,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username,
           display_name: username,
           is_creator: isCreatorAccount,
-          role,
         },
       },
     });
