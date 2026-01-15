@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Copy, LogOut, Send, User } from "lucide-react";
+import { MessageSquare, Copy, LogOut, Send, User, Pencil, Trash2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,6 +8,12 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Configure marked for safe HTML
 marked.setOptions({
@@ -29,6 +35,8 @@ export function CloudChatRoom({ onClose }: CloudChatRoomProps) {
     createSession,
     joinSession,
     sendMessage,
+    editMessage,
+    deleteMessage,
     leaveSession,
     user,
     profile,
@@ -39,6 +47,8 @@ export function CloudChatRoom({ onClose }: CloudChatRoomProps) {
   const [joinCode, setJoinCode] = useState("");
   const [messageInput, setMessageInput] = useState("");
   const [pendingJoinCode, setPendingJoinCode] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,6 +133,33 @@ export function CloudChatRoom({ onClose }: CloudChatRoomProps) {
     if (msg.guest_name) return msg.guest_name;
     if (msg.user_id === user?.id) return profile?.display_name || profile?.username || "You";
     return "User";
+  };
+
+  const handleStartEdit = (messageId: string, content: string) => {
+    setEditingMessageId(messageId);
+    setEditContent(content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId || !editContent.trim()) return;
+    const success = await editMessage(editingMessageId, editContent.trim());
+    if (success) {
+      setEditingMessageId(null);
+      setEditContent("");
+    }
+  };
+
+  const handleDelete = async (messageId: string) => {
+    await deleteMessage(messageId);
+  };
+
+  const canModifyMessage = (msg: { user_id: string | null }) => {
+    return user && msg.user_id === user.id;
   };
 
   // Menu view
@@ -327,29 +364,124 @@ export function CloudChatRoom({ onClose }: CloudChatRoomProps) {
           ) : (
             messages.map((msg) => {
               const isOwn = msg.user_id === user?.id || (msg.guest_name && msg.guest_name === guestName);
+              const isEditing = editingMessageId === msg.id;
+              const canModify = canModifyMessage(msg);
+
               return (
                 <div
                   key={msg.id}
                   className={cn(
-                    "flex flex-col gap-1",
+                    "flex flex-col gap-1 group",
                     isOwn ? "items-end" : "items-start"
                   )}
                 >
                   <span className="text-xs text-muted-foreground px-2">
                     {getSenderName(msg)}
                   </span>
-                  <div
-                    className={cn(
-                      "max-w-[80%] rounded-2xl px-4 py-2 prose prose-sm dark:prose-invert",
-                      isOwn
-                        ? "bg-primary text-primary-foreground prose-headings:text-primary-foreground prose-p:text-primary-foreground prose-strong:text-primary-foreground"
-                        : "bg-muted"
+                  
+                  {isEditing ? (
+                    <div className="max-w-[80%] w-full flex flex-col gap-2">
+                      <Input
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSaveEdit();
+                          } else if (e.key === "Escape") {
+                            handleCancelEdit();
+                          }
+                        }}
+                      />
+                      <div className="flex gap-1 justify-end">
+                        <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                          <X className="h-3 w-3 mr-1" />
+                          Cancel
+                        </Button>
+                        <Button size="sm" onClick={handleSaveEdit}>
+                          <Check className="h-3 w-3 mr-1" />
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-1">
+                      {isOwn && canModify && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleStartEdit(msg.id, msg.content)}>
+                              <Pencil className="h-3 w-3 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(msg.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                      <div
+                        className={cn(
+                          "max-w-[80%] rounded-2xl px-4 py-2 prose prose-sm dark:prose-invert",
+                          isOwn
+                            ? "bg-primary text-primary-foreground prose-headings:text-primary-foreground prose-p:text-primary-foreground prose-strong:text-primary-foreground"
+                            : "bg-muted"
+                        )}
+                        dangerouslySetInnerHTML={renderMessage(msg.content)}
+                      />
+                      {!isOwn && canModify && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem onClick={() => handleStartEdit(msg.id, msg.content)}>
+                              <Pencil className="h-3 w-3 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(msg.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-1 px-2">
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(msg.created_at).toLocaleTimeString()}
+                    </span>
+                    {msg.updated_at && (
+                      <span className="text-xs text-muted-foreground italic">
+                        (edited)
+                      </span>
                     )}
-                    dangerouslySetInnerHTML={renderMessage(msg.content)}
-                  />
-                  <span className="text-xs text-muted-foreground px-2">
-                    {new Date(msg.created_at).toLocaleTimeString()}
-                  </span>
+                  </div>
                 </div>
               );
             })
