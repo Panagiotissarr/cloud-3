@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sparkles, Terminal, FlaskConical, Users, Image, X, ChevronRight } from "lucide-react";
+import { Sparkles, Terminal, FlaskConical, Users, Image, X, ChevronRight, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,6 +9,7 @@ interface CloudPlusMenuProps {
   onOpenColab: () => void;
   onOpenGallery: () => void;
   onOpenCLI: () => void;
+  onOpenCloudChat: () => void;
 }
 
 function TypewriterText({ text, delay = 50, className }: { text: string; delay?: number; className?: string }) {
@@ -90,7 +91,7 @@ function MenuOption({
   );
 }
 
-export function CloudPlusMenu({ onClose, onOpenLabs, onOpenColab, onOpenGallery, onOpenCLI }: CloudPlusMenuProps) {
+export function CloudPlusMenu({ onClose, onOpenLabs, onOpenColab, onOpenGallery, onOpenCLI, onOpenCloudChat }: CloudPlusMenuProps) {
   const { user } = useAuth();
   const [showTitle, setShowTitle] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
@@ -142,19 +143,26 @@ export function CloudPlusMenu({ onClose, onOpenLabs, onOpenColab, onOpenGallery,
             delay={1500}
           />
           <MenuOption
+            icon={MessageSquare}
+            label="Cloud Chat"
+            description="Public chat rooms with codes"
+            onClick={onOpenCloudChat}
+            delay={1700}
+          />
+          <MenuOption
             icon={FlaskConical}
             label="Cloud Labs"
             description="Create custom knowledge bases"
             onClick={onOpenLabs}
-            delay={1700}
+            delay={1900}
             disabled={!user}
           />
           <MenuOption
             icon={Users}
             label="Cloud Colab"
-            description="Real-time collaborative chat sessions"
+            description="Real-time collaborative AI sessions"
             onClick={onOpenColab}
-            delay={1900}
+            delay={2100}
             disabled={!user}
           />
           <MenuOption
@@ -162,13 +170,13 @@ export function CloudPlusMenu({ onClose, onOpenLabs, onOpenColab, onOpenGallery,
             label="AI Gallery"
             description="View your generated images"
             onClick={onOpenGallery}
-            delay={2100}
+            delay={2300}
             disabled={!user}
           />
         </div>
 
         {!user && (
-          <p className="text-center text-sm text-muted-foreground mt-6 animate-fade-in" style={{ animationDelay: "2.3s" }}>
+          <p className="text-center text-sm text-muted-foreground mt-6 animate-fade-in" style={{ animationDelay: "2.5s" }}>
             Sign in to access all Cloud+ features
           </p>
         )}
