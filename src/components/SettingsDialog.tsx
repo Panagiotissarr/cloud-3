@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Settings, ChevronLeft, ChevronRight, Monitor, Sun, Moon, Palette, Thermometer, Sparkles } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ApiKeySection } from "@/components/ApiKeySection";
 import {
   ThemeMode,
   ThemePalette,
@@ -54,6 +56,7 @@ export function SettingsDialog({
   const [showDogGallery, setShowDogGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { config, setMode, setPalette, setAccent, setCustomColors, effectiveMode } = useTheme();
+  const { user } = useAuth();
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % lunaImages.length);
@@ -285,6 +288,13 @@ export function SettingsDialog({
               </ul>
             </div>
           </div>
+
+          {/* API Key Section - Only show for authenticated users */}
+          {user && (
+            <div className="pt-2 border-t border-border">
+              <ApiKeySection />
+            </div>
+          )}
 
           {showDogGallery && (
             <div className="animate-fade-in space-y-3">
