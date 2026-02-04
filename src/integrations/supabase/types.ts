@@ -38,6 +38,63 @@ export type Database = {
         }
         Relationships: []
       }
+      api_data_feed: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          last_used_at: string | null
+          name: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          name?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       banned_ips: {
         Row: {
           banned_by: string
@@ -451,6 +508,7 @@ export type Database = {
           name: string
         }[]
       }
+      get_user_id_from_api_key: { Args: { key: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -460,6 +518,7 @@ export type Database = {
       }
       is_creator: { Args: { _user_id: string }; Returns: boolean }
       is_user_banned: { Args: { _user_id: string }; Returns: boolean }
+      update_api_key_last_used: { Args: { key: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
